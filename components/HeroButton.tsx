@@ -1,142 +1,92 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, StyleProp, TextStyle, ViewStyle } from 'react-native';
 import Colors from '@/constants/colors';
 
 interface HeroButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'hero' | 'outline' | 'danger';
-  size?: 'small' | 'medium' | 'large';
-  loading?: boolean;
+  variant?: 'primary' | 'secondary' | 'outline';
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
   disabled?: boolean;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
 }
 
 const HeroButton: React.FC<HeroButtonProps> = ({
   title,
   onPress,
   variant = 'primary',
-  size = 'medium',
-  loading = false,
-  disabled = false,
   style,
   textStyle,
+  disabled = false,
 }) => {
-  const getBackgroundColor = () => {
-    if (disabled) return Colors.gray[300];
-    
-    switch (variant) {
-      case 'primary':
-        return Colors.primary;
-      case 'secondary':
-        return Colors.secondary;
-      case 'hero':
-        return Colors.heroPrimary;
-      case 'outline':
-        return 'transparent';
-      case 'danger':
-        return Colors.danger;
-      default:
-        return Colors.primary;
-    }
-  };
+  const buttonStyles = [
+    styles.button,
+    variant === 'primary' && styles.primaryButton,
+    variant === 'secondary' && styles.secondaryButton,
+    variant === 'outline' && styles.outlineButton,
+    disabled && styles.disabledButton,
+    style,
+  ];
 
-  const getTextColor = () => {
-    if (disabled) return Colors.gray[600];
-    
-    switch (variant) {
-      case 'outline':
-        return Colors.primary;
-      default:
-        return Colors.white;
-    }
-  };
-
-  const getBorderColor = () => {
-    if (disabled) return Colors.gray[300];
-    
-    switch (variant) {
-      case 'outline':
-        return Colors.primary;
-      case 'hero':
-        return Colors.heroPrimary;
-      default:
-        return 'transparent';
-    }
-  };
-
-  const getHeight = () => {
-    switch (size) {
-      case 'small':
-        return 36;
-      case 'medium':
-        return 48;
-      case 'large':
-        return 56;
-      default:
-        return 48;
-    }
-  };
-
-  const getFontSize = () => {
-    switch (size) {
-      case 'small':
-        return 14;
-      case 'medium':
-        return 16;
-      case 'large':
-        return 18;
-      default:
-        return 16;
-    }
-  };
+  const textStyles = [
+    styles.text,
+    variant === 'primary' && styles.primaryText,
+    variant === 'secondary' && styles.secondaryText,
+    variant === 'outline' && styles.outlineText,
+    disabled && styles.disabledText,
+    textStyle,
+  ];
 
   return (
     <TouchableOpacity
-      style={[
-        styles.button,
-        {
-          backgroundColor: getBackgroundColor(),
-          borderColor: getBorderColor(),
-          height: getHeight(),
-          borderWidth: variant === 'outline' ? 2 : 0,
-        },
-        style,
-      ]}
+      style={buttonStyles}
       onPress={onPress}
-      disabled={disabled || loading}
+      disabled={disabled}
       activeOpacity={0.8}
     >
-      {loading ? (
-        <ActivityIndicator color={getTextColor()} />
-      ) : (
-        <Text
-          style={[
-            styles.text,
-            {
-              color: getTextColor(),
-              fontSize: getFontSize(),
-            },
-            textStyle,
-          ]}
-        >
-          {title}
-        </Text>
-      )}
+      <Text style={textStyles}>{title}</Text>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   button: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     borderRadius: 12,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    justifyContent: 'center',
+  },
+  primaryButton: {
+    backgroundColor: Colors.primary,
+  },
+  secondaryButton: {
+    backgroundColor: Colors.secondary,
+  },
+  outlineButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: Colors.primary,
+  },
+  disabledButton: {
+    backgroundColor: Colors.lightGray,
+    borderColor: Colors.lightGray,
   },
   text: {
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  primaryText: {
+    color: Colors.white,
+  },
+  secondaryText: {
+    color: Colors.white,
+  },
+  outlineText: {
+    color: Colors.primary,
+  },
+  disabledText: {
+    color: Colors.mediumGray,
   },
 });
 

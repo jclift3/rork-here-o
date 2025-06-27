@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
+import { Shield } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import HeroButton from '@/components/HeroButton';
 
@@ -25,13 +26,14 @@ export default function WelcomeScreen() {
         style={styles.gradient}
       />
       <Image
-        source={{ uri: 'https://images.unsplash.com/photo-1611841315886-a8ad8d02f179?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80' }}
+        source={{ uri: 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80' }}
         style={styles.backgroundImage}
       />
       
       <View style={styles.content}>
         <View style={styles.header}>
           <View style={styles.logoContainer}>
+            <Shield size={48} color={Colors.primary} />
             <Text style={styles.logoText}>Here-O</Text>
           </View>
           <Text style={styles.tagline}>Will You Answer The Call?</Text>
@@ -101,11 +103,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
+    borderWidth: 2,
+    borderColor: Colors.primary,
   },
   logoText: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: Colors.white,
+    marginTop: 4,
   },
   tagline: {
     fontSize: 32,
@@ -113,6 +118,9 @@ const styles = StyleSheet.create({
     color: Colors.white,
     textAlign: 'center',
     marginBottom: 16,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   description: {
     marginBottom: 40,
@@ -122,6 +130,9 @@ const styles = StyleSheet.create({
     color: Colors.white,
     textAlign: 'center',
     lineHeight: 26,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0.5, height: 0.5 },
+    textShadowRadius: 2,
   },
   buttons: {
     marginBottom: 24,
