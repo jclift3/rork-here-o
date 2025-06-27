@@ -5,6 +5,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import Colors from "@/constants/colors";
+import { Platform } from "react-native";
 
 export const unstable_settings = {
   initialRouteName: "index",
