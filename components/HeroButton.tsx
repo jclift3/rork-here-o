@@ -40,7 +40,7 @@ const HeroButton: React.FC<HeroButtonProps> = ({
   ];
 
   const getLoaderColor = () => {
-    if (disabled) return Colors.mediumGray;
+    if (disabled) return Colors.gray[500];
     if (variant === 'outline') return Colors.primary;
     return Colors.white;
   };
@@ -81,8 +81,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
   },
   disabledButton: {
-    backgroundColor: Colors.lightGray,
-    borderColor: Colors.lightGray,
+    backgroundColor: Colors.gray[200],
+    borderColor: Colors.gray[200],
   },
   text: {
     fontSize: 16,
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     color: Colors.primary,
   },
   disabledText: {
-    color: Colors.mediumGray,
+    color: Colors.gray[500],
   },
 });
 
