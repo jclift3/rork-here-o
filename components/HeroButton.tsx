@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, StyleProp, TextStyle, ViewStyle } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, StyleProp, TextStyle, ViewStyle, ActivityIndicator } from 'react-native';
 import Colors from '@/constants/colors';
 
 interface HeroButtonProps {
@@ -9,6 +9,7 @@ interface HeroButtonProps {
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   disabled?: boolean;
+  loading?: boolean;
 }
 
 const HeroButton: React.FC<HeroButtonProps> = ({
@@ -18,6 +19,7 @@ const HeroButton: React.FC<HeroButtonProps> = ({
   style,
   textStyle,
   disabled = false,
+  loading = false,
 }) => {
   const buttonStyles = [
     styles.button,
@@ -37,14 +39,24 @@ const HeroButton: React.FC<HeroButtonProps> = ({
     textStyle,
   ];
 
+  const getLoaderColor = () => {
+    if (disabled) return Colors.mediumGray;
+    if (variant === 'outline') return Colors.primary;
+    return Colors.white;
+  };
+
   return (
     <TouchableOpacity
       style={buttonStyles}
       onPress={onPress}
-      disabled={disabled}
+      disabled={disabled || loading}
       activeOpacity={0.8}
     >
-      <Text style={textStyles}>{title}</Text>
+      {loading ? (
+        <ActivityIndicator color={getLoaderColor()} size="small" />
+      ) : (
+        <Text style={textStyles}>{title}</Text>
+      )}
     </TouchableOpacity>
   );
 };
