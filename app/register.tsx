@@ -48,7 +48,7 @@ export default function RegisterScreen() {
         name,
         gender,
         isVerified: false,
-        verificationLevel: 'pending' as 'pending', // Explicitly type as 'pending'
+        verificationLevel: 'pending' as const, // Use const assertion to match the UserType
       };
       login(newUser);
       setIsLoading(false);

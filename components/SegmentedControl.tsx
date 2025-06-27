@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Colors from '@/constants/colors';
 
 interface SegmentedControlProps {
@@ -15,10 +15,6 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
   onChange,
   variant = 'primary',
 }) => {
-  const getBackgroundColor = () => {
-    return variant === 'hero' ? Colors.heroPrimary : Colors.primary;
-  };
-
   return (
     <View style={styles.container}>
       {segments.map((segment, index) => (
@@ -26,18 +22,18 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
           key={index}
           style={[
             styles.segment,
-            selectedIndex === index && [
-              styles.selectedSegment,
-              { backgroundColor: getBackgroundColor() },
-            ],
+            selectedIndex === index && (
+              variant === 'hero' ? styles.selectedSegmentHero : styles.selectedSegment
+            ),
           ]}
           onPress={() => onChange(index)}
-          activeOpacity={0.8}
         >
           <Text
             style={[
               styles.segmentText,
-              selectedIndex === index && styles.selectedSegmentText,
+              selectedIndex === index && (
+                variant === 'hero' ? styles.selectedSegmentTextHero : styles.selectedSegmentText
+              ),
             ]}
           >
             {segment}
@@ -51,26 +47,45 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: Colors.gray[200],
+    backgroundColor: Colors.gray ? Colors.gray[100] : '#f3f4f6',
     borderRadius: 12,
     padding: 4,
   },
   segment: {
     flex: 1,
     paddingVertical: 8,
+    paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
   },
   selectedSegment: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.white,
+    borderRadius: 8,
+    shadowColor: Colors.text,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  selectedSegmentHero: {
+    backgroundColor: Colors.heroPrimary,
+    borderRadius: 8,
+    shadowColor: Colors.text,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
   },
   segmentText: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.gray[700],
+    color: Colors.gray ? Colors.gray[500] : '#6b7280',
   },
   selectedSegmentText: {
+    color: Colors.text,
+    fontWeight: '600',
+  },
+  selectedSegmentTextHero: {
     color: Colors.white,
     fontWeight: '600',
   },
