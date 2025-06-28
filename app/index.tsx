@@ -22,11 +22,11 @@ export default function WelcomeScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
       <LinearGradient
-        colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.4)']}
+        colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.5)']}
         style={styles.gradient}
       />
       <Image
-        source={{ uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80' }}
+        source={{ uri: 'https://images.unsplash.com/photo-1447005497901-b3e9ee359928?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80' }}
         style={styles.backgroundImage}
       />
       
