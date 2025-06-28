@@ -22,18 +22,18 @@ export default function WelcomeScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
       <LinearGradient
-        colors={['rgba(0,0,0,0.7)', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.7)']}
+        colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.4)']}
         style={styles.gradient}
       />
       <Image
-        source={{ uri: 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80' }}
+        source={{ uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80' }}
         style={styles.backgroundImage}
       />
       
       <View style={styles.content}>
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Shield size={48} color={Colors.primary} />
+            <Shield size={48} color={Colors.heroPrimary} />
             <Text style={styles.logoText}>Here-O</Text>
           </View>
           <Text style={styles.tagline}>Will You Answer The Call?</Text>
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
     borderWidth: 2,
-    borderColor: Colors.primary,
+    borderColor: Colors.heroPrimary,
   },
   logoText: {
     fontSize: 24,
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   registerButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.heroPrimary,
   },
   skipContainer: {
     alignItems: 'center',
