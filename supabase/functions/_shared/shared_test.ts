@@ -176,7 +176,7 @@ Deno.test("push messages dedupe and drop invalid tokens", async () => {
   assertEquals(await sendPush(msgs, failing), 0);
 });
 
-Deno.test("check-ins only accepts the service role key", async () => {
+Deno.test("check-ins only accepts the scheduler secret", async () => {
   const { isServiceRequest } = await import("./walks.ts");
   assert(isServiceRequest("Bearer secret-key", "secret-key"));
   assertFalse(isServiceRequest("Bearer secret-kez", "secret-key"));

@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { ChevronRight, ShieldCheck } from 'lucide-react-native';
+import { ChevronRight, Footprints, PhoneIncoming, ShieldCheck } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -11,7 +11,8 @@ import { useMode } from '@/lib/mode';
 import { useSession, useUserId } from '@/lib/session';
 import { friendlyError, supabase } from '@/lib/supabase';
 import { colors, fonts, radius, space } from '@/lib/theme';
-import type { HelpMode, Incident } from '@/lib/types';
+import type { HelpMode, Incident, Walk } from '@/lib/types';
+import { clockTime, describeDue, loadActiveWalks } from '@/lib/walks';
 
 interface Assignment {
   incident_id: string;
@@ -29,9 +30,10 @@ export default function Home() {
   const [circleCount, setCircleCount] = useState(0);
   const [active, setActive] = useState<string | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [walks, setWalks] = useState<Walk[]>([]);
 
   const load = useCallback(async () => {
-    const [mine, circle, assigned] = await Promise.all([
+    const [mine, circle, assigned, activeWalks] = await Promise.all([
       supabase.from('incidents').select('id').eq('requester_id', userId).eq('status', 'active').maybeSingle(),
       supabase.from('circle_members').select('member_id', { count: 'exact', head: true }).eq('owner_id', userId),
       supabase
@@ -40,7 +42,9 @@ export default function Home() {
         .eq('user_id', userId)
         .in('status', ['notified', 'en_route', 'on_scene'])
         .eq('incidents.status', 'active'),
+      loadActiveWalks(),
     ]);
+    setWalks(activeWalks);
     setActive(mine.data?.id ?? null);
     setCircleCount(circle.count ?? 0);
     setAssignments((assigned.data ?? []) as unknown as Assignment[]);
@@ -100,6 +104,28 @@ export default function Home() {
         </Pressable>
       ))}
 
+      {walks.map((w) => {
+        const mineWalk = w.user_id === userId;
+        const name = w.profiles?.display_name?.split(' ')[0] || 'Someone';
+        return (
+          <Pressable key={w.id} onPress={() => router.push({ pathname: '/walk/[id]', params: { id: w.id } })}>
+            <Card style={styles.row}>
+              <Footprints color={colors.heroStart} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={styles.rowTitle}>
+                  {mineWalk ? 'Your walk' : `${name} is walking`}
+                  {w.destination ? ` to ${w.destination}` : ''}
+                </Text>
+                <Body muted>
+                  {mineWalk ? `${describeDue(w.due_at)} · check in by ${clockTime(w.due_at)}` : `Due by ${clockTime(w.due_at)}`}
+                </Body>
+              </View>
+              <ChevronRight color={colors.ink} />
+            </Card>
+          </Pressable>
+        );
+      })}
+
       <View style={styles.holdWrap}>
         <HoldToHelp size={220} onComplete={sendAlert} onTap={() => router.push('/help')} />
         <Body muted style={{ textAlign: 'center' }}>
@@ -107,6 +133,16 @@ export default function Home() {
             ? 'Her-O mode: only verified women guardians are sent.'
             : 'Hold for two seconds. Your circle and nearby guardians are alerted.'}
         </Body>
+      </View>
+
+      <View style={styles.quickRow}>
+        <QuickAction
+          label="Walk with me"
+          icon={<Footprints color={colors.ink} />}
+          disabled={walks.some((w) => w.user_id === userId)}
+          onPress={() => router.push('/walk')}
+        />
+        <QuickAction label="Fake call" icon={<PhoneIncoming color={colors.ink} />} onPress={() => router.push('/fake-call')} />
       </View>
 
       {circleCount === 0 && (
@@ -140,6 +176,31 @@ export default function Home() {
   );
 }
 
+function QuickAction({
+  label,
+  icon,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [styles.quick, { opacity: disabled ? 0.4 : pressed ? 0.7 : 1 }]}>
+      {icon}
+      <Text style={styles.quickLabel}>{label}</Text>
+    </Pressable>
+  );
+}
+
 function ModeSwitch({ mode, onChange }: { mode: HelpMode; onChange: (m: HelpMode) => void }) {
   return (
     <View style={styles.switch} accessibilityRole="radiogroup">
@@ -165,6 +226,18 @@ const styles = StyleSheet.create({
   holdWrap: { alignItems: 'center', gap: space.md, paddingVertical: space.lg },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   rowTitle: { fontFamily: fonts.displayMedium, fontSize: 17, color: colors.ink },
+  quickRow: { flexDirection: 'row', gap: space.md },
+  quick: {
+    flex: 1,
+    minHeight: 88,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    borderRadius: radius.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.sm,
+  },
+  quickLabel: { fontFamily: fonts.displayMedium, fontSize: 15, color: colors.ink },
   switch: { flexDirection: 'row', borderWidth: 2, borderColor: colors.ink, borderRadius: radius.pill, padding: 2 },
   switchItem: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.pill, minHeight: 36, justifyContent: 'center' },
   switchText: { fontWeight: '800', fontSize: 13 },

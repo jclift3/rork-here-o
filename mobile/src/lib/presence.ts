@@ -11,8 +11,8 @@ const HEARTBEAT_MS = 2 * 60_000;
  * position every two minutes so dispatch can find them. Positions are only
  * readable by the dispatch function, never by other users.
  *
- * Next step: background location in a development build so guardians stay
- * reachable with the app closed.
+ * With the app closed, backgroundLocation.ts takes over if the guardian
+ * allowed "Always" location.
  */
 export function useGuardianPresence(userId: string, available: boolean) {
   useEffect(() => {

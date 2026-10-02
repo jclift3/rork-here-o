@@ -12,7 +12,12 @@
       "bundleIdentifier": "app.hereo",
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "HereO shares your location with the people helping you while a help request is open, and finds guardians near you."
+        "NSLocationWhenInUseUsageDescription": "HereO shares your location with the people helping you while a help request is open, and finds guardians near you.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "While you're available as a guardian, HereO checks your location in the background so it can send you to someone nearby who needs help. Nobody sees where you are.",
+        "UIBackgroundModes": [
+          "location",
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -27,6 +32,9 @@
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
         "VIBRATE"
       ]
     },
@@ -47,7 +55,11 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "HereO shares your location with the people helping you while a help request is open, and finds guardians near you."
+          "locationWhenInUsePermission": "HereO shares your location with the people helping you while a help request is open, and finds guardians near you.",
+          "locationAlwaysAndWhenInUsePermission": "While you're available as a guardian, HereO checks your location in the background so it can send you to someone nearby who needs help. Nobody sees where you are.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
       [

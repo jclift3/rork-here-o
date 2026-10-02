@@ -8,7 +8,7 @@ export function IncidentMap({ lat, lng, label }: { lat: number | null; lng: numb
   return (
     <Pressable onPress={() => Linking.openURL(`https://maps.google.com/?q=${lat},${lng}`)}>
       <Card>
-        <Text>Open {label} in Maps</Text>
+        <Text>Open {label === 'You' ? 'your location' : `${label}’s location`} in Maps</Text>
       </Card>
     </Pressable>
   );

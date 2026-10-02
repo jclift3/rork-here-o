@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
+import { stopGuardianBackgroundLocation } from '@/lib/backgroundLocation';
 import { ModeProvider } from '@/lib/mode';
 import { registerForPush, routeNotificationTaps } from '@/lib/notifications';
 import { useGuardianPresence } from '@/lib/presence';
@@ -19,7 +20,12 @@ function SignedInEffects() {
     if (userId) registerForPush(userId);
   }, [userId]);
   useEffect(() => (userId ? routeNotificationTaps() : undefined), [userId]);
-  useGuardianPresence(userId, !!profile?.is_guardian && !!profile.guardian_available);
+  const available = !!profile?.is_guardian && !!profile.guardian_available;
+  useGuardianPresence(userId, available);
+  // Availability can be turned off elsewhere (another device); stop tracking here too.
+  useEffect(() => {
+    if (profile && !available) stopGuardianBackgroundLocation();
+  }, [profile, available]);
   return null;
 }
 
@@ -40,6 +46,9 @@ function RootStack() {
         <Stack.Screen name="incident/[id]" options={{ gestureEnabled: false }} />
         <Stack.Screen name="circle" options={{ presentation: 'modal' }} />
         <Stack.Screen name="guardian" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="verify" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="walk/index" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="fake-call" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
       </Stack>
     </>
   );

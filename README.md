@@ -10,7 +10,7 @@ Guardians are neighbors who show up: be present, de-escalate, stay with the pers
 |---|---|
 | `mobile/` | The app. Expo SDK 57, React Native, Expo Router, TypeScript. |
 | `supabase/migrations/` | Postgres schema, row-level security and helper functions. |
-| `supabase/functions/` | Edge functions: `dispatch` (alert circle, AI triage, send guardians) and `brief` (refresh the shared live brief). |
+| `supabase/functions/` | Edge functions: `dispatch` (alert circle, AI triage, send guardians), `brief` (refresh the shared live brief) and `check-ins` (turn missed walk check-ins into help requests, every minute). |
 | `supabase/tests/` | Permission tests that run the migration on a plain Postgres. |
 | `docs/redesign.md` | Design direction from the Figma prototype, with tokens. |
 | `expo/` | The original Rork prototype (mock data only), kept for reference. |
@@ -26,6 +26,13 @@ Guardians are neighbors who show up: be present, de-escalate, stay with the pers
 7. Every message or status change refreshes the **live brief** (Claude again, with a fallback).
 8. The person taps **I'm safe**, everyone is released, and they can **thank** the people who showed up. Thanks feed the Discover tab's top Here-Os.
 
+Also in the app:
+
+- **Walk with me.** Set a destination and a check-in time. Your circle can follow your location until you tap **I've arrived**. Miss the check-in by two minutes and the `check-ins` function turns it into a help request, dispatched exactly like a held button.
+- **Fake call.** A realistic incoming call to give you a reason to leave. Nobody is alerted.
+- **Guardian background location.** Available guardians who allow "Always" location stay findable with the app closed.
+- **Her-O verification requests.** Users request verification in the app; the HereO team approves with `update her_o_verifications set status = 'approved' where user_id = '<id>'`, which sets the profile's Her-O badge.
+
 ## Run it
 
 ### Backend (Supabase)
@@ -35,7 +42,13 @@ npm i -g supabase            # or brew install supabase/tap/supabase
 supabase link --project-ref <your-project-ref>
 supabase db push             # applies supabase/migrations
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
-supabase functions deploy dispatch brief
+supabase functions deploy dispatch brief check-ins
+```
+
+Point the check-in scheduler at the project once, in the SQL editor (the migration already created the cron job and its secret):
+
+```sql
+select vault.create_secret('https://<your-project-ref>.supabase.co', 'hereo_project_url');
 ```
 
 In the Supabase dashboard, edit **Authentication → Email Templates → Magic Link** to send the code (`{{ .Token }}`) instead of a link; the app signs in with a 6-digit code.
@@ -63,8 +76,7 @@ CI runs all three on every pull request.
 
 ## Not built yet
 
-- Background location for guardians (today they're reachable while the app is open, up to 15 minutes after).
 - Silent 911 with location through a partner such as RapidSOS or Noonlight. Today Call 911 opens the dialer.
-- Her-O verification and guardian background checks (the database fields exist; the flow doesn't).
-- Walk with me, check-in timers and fake call from the original prototype.
+- An identity-verification vendor for Her-O (today the HereO team reviews requests by hand) and guardian background checks.
+- Walk with me in the background: the walker's location updates while the app is open; the check-in deadline is enforced by the server either way.
 - Licensed or commissioned welcome art and a real app icon.

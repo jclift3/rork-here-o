@@ -160,27 +160,41 @@ end $$;
 -- ---------------------------------------------------------------------------
 -- Run the check-ins function every minute.
 --
--- Needs two Vault secrets, set once per project in the SQL editor:
---   select vault.create_secret('https://<ref>.supabase.co', 'project_url');
---   select vault.create_secret('<service role key>', 'service_role_key');
--- Skipped where pg_cron or pg_net isn't available (local tests).
+-- The job authenticates with a random secret it generates in Vault; the
+-- function reads the same secret through check_ins_secret(), which only the
+-- service role can call. The job also needs the project URL, set once:
+--   select vault.create_secret('https://<ref>.supabase.co', 'hereo_project_url');
+-- Skipped where pg_cron, pg_net or Vault isn't available (local tests).
 -- ---------------------------------------------------------------------------
+
+create function public.check_ins_secret() returns text
+language plpgsql stable security definer set search_path = public as $$
+begin
+  return (select decrypted_secret from vault.decrypted_secrets where name = 'hereo_check_ins_secret');
+end $$;
+
+revoke execute on function public.check_ins_secret from public, anon, authenticated;
 
 do $$
 begin
   if exists (select 1 from pg_available_extensions where name = 'pg_cron')
-     and exists (select 1 from pg_available_extensions where name = 'pg_net') then
+     and exists (select 1 from pg_available_extensions where name = 'pg_net')
+     and exists (select 1 from pg_namespace where nspname = 'vault') then
     create extension if not exists pg_cron;
     create extension if not exists pg_net;
+    if not exists (select 1 from vault.secrets where name = 'hereo_check_ins_secret') then
+      perform vault.create_secret(encode(gen_random_bytes(32), 'hex'), 'hereo_check_ins_secret');
+    end if;
     perform cron.schedule(
       'hereo-check-ins',
       '* * * * *',
       $job$
         select net.http_post(
-          url := (select decrypted_secret from vault.decrypted_secrets where name = 'project_url') || '/functions/v1/check-ins',
+          url := (select decrypted_secret from vault.decrypted_secrets where name = 'hereo_project_url')
+                 || '/functions/v1/check-ins',
           headers := jsonb_build_object(
             'Content-Type', 'application/json',
-            'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'service_role_key')
+            'Authorization', 'Bearer ' || public.check_ins_secret()
           ),
           body := '{}'::jsonb
         );

@@ -2,7 +2,8 @@
 // check-in is overdue into help requests and dispatches them exactly like a
 // held button, then tells the walker what happened.
 //
-// Only the scheduler may call this: it must present the service role key.
+// Only the scheduler may call this: it must present the secret the walks
+// migration generated in Vault.
 
 import { dispatchIncident } from "../_shared/dispatch.ts";
 import { adminClient, json } from "../_shared/http.ts";
@@ -11,11 +12,12 @@ import { isServiceRequest } from "../_shared/walks.ts";
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
-  if (!isServiceRequest(req.headers.get("Authorization"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"))) {
+  const db = adminClient();
+  const { data: secret } = await db.rpc("check_ins_secret");
+  if (!isServiceRequest(req.headers.get("Authorization"), typeof secret === "string" ? secret : undefined)) {
     return json({ error: "forbidden" }, 403);
   }
 
-  const db = adminClient();
   const { data, error } = await db.rpc("escalate_overdue_walks");
   if (error) {
     console.error("escalate_overdue_walks failed", error);

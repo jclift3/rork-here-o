@@ -1,4 +1,4 @@
-/** True when the request carries the service role key (the pg_cron job). */
+/** True when the request carries the scheduler's shared secret. */
 export function isServiceRequest(authorization: string | null, serviceKey: string | undefined): boolean {
   if (!authorization || !serviceKey) return false;
   const presented = authorization.replace(/^Bearer\s+/i, "");

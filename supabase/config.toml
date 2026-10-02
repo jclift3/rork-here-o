@@ -15,7 +15,7 @@ import_map = "./functions/deno.json"
 verify_jwt = true
 import_map = "./functions/deno.json"
 
-# Called every minute by pg_cron with the service role key, not by the app.
+# Called every minute by pg_cron with a Vault secret, not by the app.
 [functions.check-ins]
 verify_jwt = false
 import_map = "./functions/deno.json"
