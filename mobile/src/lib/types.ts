@@ -63,3 +63,30 @@ export const COURSES = [
 ] as const;
 
 export type CourseId = (typeof COURSES)[number]['id'];
+
+export type WalkStatus = 'active' | 'arrived' | 'cancelled' | 'escalated';
+
+export interface Walk {
+  id: string;
+  user_id: string;
+  mode: HelpMode;
+  status: WalkStatus;
+  destination: string | null;
+  started_at: string;
+  due_at: string;
+  lat: number | null;
+  lng: number | null;
+  location_at: string | null;
+  ended_at: string | null;
+  incident_id: string | null;
+  profiles?: { display_name: string } | null;
+}
+
+export interface HerOVerification {
+  user_id: string;
+  status: 'pending' | 'approved' | 'declined';
+  note: string | null;
+  submitted_at: string;
+  reviewed_at: string | null;
+  review_note: string | null;
+}

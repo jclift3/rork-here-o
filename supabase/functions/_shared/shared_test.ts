@@ -175,3 +175,12 @@ Deno.test("push messages dedupe and drop invalid tokens", async () => {
   const failing = (() => Promise.reject(new Error("offline"))) as typeof fetch;
   assertEquals(await sendPush(msgs, failing), 0);
 });
+
+Deno.test("check-ins only accepts the service role key", async () => {
+  const { isServiceRequest } = await import("./walks.ts");
+  assert(isServiceRequest("Bearer secret-key", "secret-key"));
+  assertFalse(isServiceRequest("Bearer secret-kez", "secret-key"));
+  assertFalse(isServiceRequest("Bearer anon", "secret-key"));
+  assertFalse(isServiceRequest(null, "secret-key"));
+  assertFalse(isServiceRequest("Bearer ", undefined));
+});

@@ -38,12 +38,16 @@ export async function registerForPush(userId: string): Promise<void> {
   }
 }
 
-/** Opens the incident a tapped notification points to, including the one that launched the app. */
+/** Opens the incident or walk a tapped notification points to, including the one that launched the app. */
 export function routeNotificationTaps(): () => void {
   if (Platform.OS === 'web') return () => {};
   const open = (response: Notifications.NotificationResponse | null) => {
-    const id = response?.notification.request.content.data?.incident_id;
-    if (typeof id === 'string') router.push({ pathname: '/incident/[id]', params: { id } });
+    const data = response?.notification.request.content.data;
+    if (typeof data?.incident_id === 'string') {
+      router.push({ pathname: '/incident/[id]', params: { id: data.incident_id } });
+    } else if (typeof data?.walk_id === 'string') {
+      router.push({ pathname: '/walk/[id]', params: { id: data.walk_id } });
+    }
   };
   open(Notifications.getLastNotificationResponse());
   const sub = Notifications.addNotificationResponseReceivedListener(open);
