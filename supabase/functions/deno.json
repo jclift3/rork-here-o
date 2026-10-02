@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "strict": true
+  },
+  "fmt": {
+    "lineWidth": 120
+  },
+  "tasks": {
+    "test": "deno test _shared/",
+    "check": "deno check dispatch/index.ts brief/index.ts"
+  },
+  "imports": {
+    "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@0.131.0",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.117.2",
+    "@std/assert": "jsr:@std/assert@1.0.19"
+  }
+}

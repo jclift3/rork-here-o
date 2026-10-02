@@ -1,0 +1,16 @@
+# Minimal Supabase CLI config. `supabase link --project-ref <ref>` connects it
+# to a hosted project; see README.md for the full setup.
+project_id = "hereo"
+
+[auth.email]
+# The app signs in with a 6-digit email code (no magic link).
+enable_signup = true
+otp_length = 6
+
+[functions.dispatch]
+verify_jwt = true
+import_map = "./functions/deno.json"
+
+[functions.brief]
+verify_jwt = true
+import_map = "./functions/deno.json"
