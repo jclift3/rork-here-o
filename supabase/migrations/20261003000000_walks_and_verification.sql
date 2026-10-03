@@ -181,9 +181,9 @@ begin
      and exists (select 1 from pg_available_extensions where name = 'pg_net')
      and exists (select 1 from pg_namespace where nspname = 'vault') then
     create extension if not exists pg_cron;
-    create extension if not exists pg_net;
+    create extension if not exists pg_net schema extensions;
     if not exists (select 1 from vault.secrets where name = 'hereo_check_ins_secret') then
-      perform vault.create_secret(encode(gen_random_bytes(32), 'hex'), 'hereo_check_ins_secret');
+      perform vault.create_secret(encode(extensions.gen_random_bytes(32), 'hex'), 'hereo_check_ins_secret');
     end if;
     perform cron.schedule(
       'hereo-check-ins',
