@@ -42,7 +42,7 @@ Type: **Lexend** for headings (closest free match to the Figma headings), system
 ## Navigation
 
 ```
-Welcome → Sign in (email code) → Onboarding (name, Her-O eligibility, circle, guardian opt-in)
+Welcome → Sign in (email + password; email codes once SMTP is set up) → Onboarding (name, Her-O eligibility, circle, guardian opt-in)
 Tabs: Home · Discover · [Hold for help] · Messages · Profile
 Incident (requester or guardian view), Circle, Become a guardian
 ```

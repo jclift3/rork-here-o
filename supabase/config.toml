@@ -3,7 +3,7 @@
 project_id = "hereo"
 
 [auth.email]
-# The app signs in with a 6-digit email code (no magic link).
+# The app signs in with email + password; the sign-up function confirms accounts.
 enable_signup = true
 otp_length = 6
 
@@ -17,5 +17,10 @@ import_map = "./functions/deno.json"
 
 # Called every minute by pg_cron with a Vault secret, not by the app.
 [functions.check-ins]
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+# Called before the person has an account, so there's no user token yet.
+[functions.sign-up]
 verify_jwt = false
 import_map = "./functions/deno.json"

@@ -42,7 +42,7 @@ npm i -g supabase            # or brew install supabase/tap/supabase
 supabase link --project-ref <your-project-ref>
 supabase db push             # applies supabase/migrations
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
-supabase functions deploy dispatch brief check-ins
+supabase functions deploy dispatch brief check-ins sign-up
 ```
 
 Point the check-in scheduler at the project once, in the SQL editor (the migration already created the cron job and its secret):
@@ -51,7 +51,7 @@ Point the check-in scheduler at the project once, in the SQL editor (the migrati
 select vault.create_secret('https://<your-project-ref>.supabase.co', 'hereo_project_url');
 ```
 
-In the Supabase dashboard, edit both **Authentication → Emails → Templates → Confirm sign up** (first sign-in) and **Magic Link** (later sign-ins) to send the code (`{{ .Token }}`) instead of a link; the app signs in with a 6-digit code.
+The app signs in with email and password. The `sign-up` function creates accounts already confirmed, because the hosted project can't send custom emails without its own SMTP. Email addresses are not verified yet; add a custom SMTP sender and switch back to email codes before launch.
 
 ### App
 
