@@ -51,7 +51,7 @@ Point the check-in scheduler at the project once, in the SQL editor (the migrati
 select vault.create_secret('https://<your-project-ref>.supabase.co', 'hereo_project_url');
 ```
 
-In the Supabase dashboard, edit **Authentication → Email Templates → Magic Link** to send the code (`{{ .Token }}`) instead of a link; the app signs in with a 6-digit code.
+In the Supabase dashboard, edit both **Authentication → Emails → Templates → Confirm sign up** (first sign-in) and **Magic Link** (later sign-ins) to send the code (`{{ .Token }}`) instead of a link; the app signs in with a 6-digit code.
 
 ### App
 
