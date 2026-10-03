@@ -10,7 +10,7 @@ Guardians are neighbors who show up: be present, de-escalate, stay with the pers
 |---|---|
 | `mobile/` | The app. Expo SDK 57, React Native, Expo Router, TypeScript. |
 | `supabase/migrations/` | Postgres schema, row-level security and helper functions. |
-| `supabase/functions/` | Edge functions: `dispatch` (alert circle, AI triage, send guardians), `brief` (refresh the shared live brief) and `check-ins` (turn missed walk check-ins into help requests, every minute). |
+| `supabase/functions/` | Edge functions: `dispatch` (alert circle, AI triage, send guardians), `brief` (refresh the shared live brief) and `check-ins` (tells the circle when a trip starts or arrives, and turns missed check-ins into help requests, every minute). |
 | `supabase/tests/` | Permission tests that run the migration on a plain Postgres. |
 | `docs/redesign.md` | Design direction from the Figma prototype, with tokens. |
 | `expo/` | The original Rork prototype (mock data only), kept for reference. |
@@ -28,7 +28,8 @@ Guardians are neighbors who show up: be present, de-escalate, stay with the pers
 
 Also in the app:
 
-- **Walk with me.** Set a destination and a check-in time. Your circle can follow your location until you tap **I've arrived**. Miss the check-in by two minutes and the `check-ins` function turns it into a help request, dispatched exactly like a held button.
+- **Trips.** Start a walk, run or ride with a destination and a check-in time. Your circle is told as it starts and follows your location live. Heading home (saved in Profile), the trip ends by itself within 75 m of home and the circle hears "home safe". Miss the check-in by two minutes and your circle is alerted. Nearby guardians are only alerted if you turned on **Also alert nearby guardians if I don't respond** in Profile, and only after another 5 minutes with no answer; they're told it's an unanswered check-in, not a confirmed emergency.
+- **Lock screen and home screen (iOS).** A running trip shows as a Live Activity on the lock screen and in the Dynamic Island, with a live countdown. The **Start a trip** widget starts a trip in one tap (`hereo://walk?go=1&kind=walk|run|ride`).
 - **Fake call.** A realistic incoming call to give you a reason to leave. Nobody is alerted.
 - **Guardian background location.** Available guardians who allow "Always" location stay findable with the app closed.
 - **Her-O verification requests.** Users request verification in the app; the HereO team approves with `update her_o_verifications set status = 'approved' where user_id = '<id>'`, which sets the profile's Her-O badge.
@@ -62,7 +63,7 @@ npm install
 npx expo start
 ```
 
-Maps and push notifications need a development build (`npx expo run:ios` / `run:android`, or `eas build --profile development`). Push also needs an EAS project id (`eas init`).
+Maps, push notifications, background trip sharing, the Live Activity and the widget need a development build (`npx expo run:ios` / `run:android`, or `eas build --profile development`). Push also needs an EAS project id (`eas init`).
 
 ### Tests
 
@@ -78,5 +79,5 @@ CI runs all three on every pull request.
 
 - Silent 911 with location through a partner such as RapidSOS or Noonlight. Today Call 911 opens the dialer.
 - An identity-verification vendor for Her-O (today the HereO team reviews requests by hand) and guardian background checks.
-- Walk with me in the background: the walker's location updates while the app is open; the check-in deadline is enforced by the server either way.
+- Trip location in the background needs "Always" location permission; without it, location is shared while the app is open. The check-in deadline is enforced by the server either way.
 - Licensed or commissioned welcome art and a real app icon.

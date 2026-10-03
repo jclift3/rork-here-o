@@ -102,6 +102,19 @@ export function fallbackTriage(
   const danger = describesImmediateDanger(incident.note);
   const sent = candidates.slice(0, MAX_GUARDIANS);
   const first = sent[0];
+  if (incident.trigger === "check_in_missed" && !danger) {
+    return {
+      urgency: "elevated",
+      category: "unanswered check-in",
+      call_911_recommended: false,
+      summary: first
+        ? `No answer after a missed check-in. ${firstName(first.display_name)} is ${
+          describeDistance(first.distance_m)
+        } and checking.`
+        : "A check-in was missed. Your circle has been told and has your last location. If you're OK, tap I'm safe.",
+      guardian_roles: sent.map((c, i) => ({ user_id: c.user_id, role: defaultRole(i, requesterName) })),
+    };
+  }
   const summary = [
     first
       ? `${firstName(first.display_name)} is ${describeDistance(first.distance_m)} and on the way.`

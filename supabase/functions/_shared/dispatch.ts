@@ -7,6 +7,9 @@
 //    budget and a deterministic fallback.
 // 4. Alerts the chosen guardians and records the triage on the incident.
 //
+// A missed check-in alerts only the circle here. Guardians hear about it later
+// through dispatchGuardians(), and only for people who opted in.
+//
 // Safe to call twice: the first call claims the incident via dispatched_at.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -102,7 +105,83 @@ export async function dispatchIncident(
     );
   }
 
-  // 2. Nearby guardians, excluding people already alerted as circle.
+  // A missed check-in stops here: no model call, no guardians yet.
+  if (incident.trigger === "check_in_missed") {
+    const triage = fallbackTriage(incident, [], requesterName);
+    await recordTriage(db, incident.id, triage, "fallback");
+    return {
+      status: "dispatched" as const,
+      triage_source: "fallback",
+      urgency: triage.urgency,
+      call_911_recommended: triage.call_911_recommended,
+      circle_alerted: circle.length,
+      guardians_sent: 0,
+    };
+  }
+
+  const sent = await sendGuardians(
+    db,
+    incident,
+    requesterName,
+    circle.map((c) => c.user_id),
+    circle.map((c) => c.display_name),
+  );
+  await recordTriage(db, incident.id, sent.triage, sent.source);
+
+  return {
+    status: "dispatched" as const,
+    triage_source: sent.source,
+    urgency: sent.triage.urgency,
+    call_911_recommended: sent.triage.call_911_recommended,
+    circle_alerted: circle.length,
+    guardians_sent: sent.count,
+  };
+}
+
+/**
+ * Alerts nearby guardians about a missed check-in that is still unanswered
+ * after the grace period. The check-ins function calls this for incidents it
+ * claimed with claim_due_guardian_alerts().
+ */
+export async function dispatchGuardians(db: SupabaseClient, incidentId: string): Promise<number> {
+  const { data: incident } = await db.from("incidents").select("*").eq("id", incidentId).eq("status", "active")
+    .maybeSingle<Incident>();
+  if (!incident) return 0;
+  const { data: requester } = await db.from("profiles").select("display_name").eq("id", incident.requester_id)
+    .single();
+  const { data: alreadyAlerted } = await db
+    .from("incident_responders")
+    .select("user_id, profiles:user_id(display_name)")
+    .eq("incident_id", incidentId);
+  const rows = alreadyAlerted ?? [];
+  const sent = await sendGuardians(
+    db,
+    incident,
+    requester?.display_name || "Someone",
+    rows.map((r) => r.user_id as string),
+    rows.map((r) => (r.profiles as unknown as { display_name: string } | null)?.display_name ?? ""),
+  );
+  if (sent.count) {
+    await db.from("incident_events").insert({
+      incident_id: incidentId,
+      kind: "triaged",
+      body: `No answer yet, so ${
+        sent.count === 1 ? "a nearby guardian was" : `${sent.count} nearby guardians were`
+      } asked to check.`,
+    });
+  }
+  return sent.count;
+}
+
+// Finds nearby guardians, asks Claude to give each one a job, and alerts them.
+async function sendGuardians(
+  db: SupabaseClient,
+  incident: Incident,
+  requesterName: string,
+  excludeIds: string[],
+  circleNames: string[],
+): Promise<{ triage: Triage; source: "ai" | "fallback"; count: number }> {
+  const deepLink = { incident_id: incident.id, url: `hereo://incident/${incident.id}` };
   let candidates: GuardianCandidate[] = [];
   if (incident.lat != null && incident.lng != null) {
     const { data, error } = await db.rpc("nearby_guardians", {
@@ -110,24 +189,22 @@ export async function dispatchIncident(
       p_lng: incident.lng,
       p_radius_m: SEARCH_RADIUS_M,
       p_her_o_only: incident.mode === "her_o",
-      p_exclude: [requesterId, ...circle.map((c) => c.user_id)],
+      p_exclude: [incident.requester_id, ...excludeIds],
       p_limit: CANDIDATE_LIMIT,
     });
     if (error) console.error("nearby_guardians failed", error);
     candidates = (data ?? []) as GuardianCandidate[];
   }
 
-  // 3. Triage.
   const raw = await askJson({
     system: TRIAGE_SYSTEM,
-    user: buildTriagePrompt(incident, candidates, circle.map((c) => c.display_name)),
+    user: buildTriagePrompt(incident, candidates, circleNames),
     schema: TRIAGE_SCHEMA,
     timeoutMs: TRIAGE_TIMEOUT_MS,
   });
   const aiTriage = finalizeTriage(raw, incident, candidates, requesterName);
   const triage: Triage = aiTriage ?? fallbackTriage(incident, candidates, requesterName);
 
-  // 4. Send the chosen guardians.
   const byId = new Map(candidates.map((c) => [c.user_id, c]));
   const chosen = triage.guardian_roles.slice(0, MAX_GUARDIANS).flatMap((r) => {
     const c = byId.get(r.user_id);
@@ -144,35 +221,33 @@ export async function dispatchIncident(
       })),
       { onConflict: "incident_id,user_id", ignoreDuplicates: true },
     );
-    // Each guardian gets their own job in the notification.
+    // Each guardian gets their own job in the notification. An unanswered
+    // check-in is labelled as such, never as a confirmed emergency.
+    const missed = incident.trigger === "check_in_missed";
     await Promise.all(chosen.map((g) =>
       sendPush(
         buildPushMessages(
           [g.push_token],
-          `Someone ${Math.round(g.distance_m)} m away needs help`,
-          g.role,
+          missed
+            ? `Unanswered check-in ${Math.round(g.distance_m)} m away`
+            : `Someone ${Math.round(g.distance_m)} m away needs help`,
+          missed ? `Not a confirmed emergency: someone nearby hasn't checked in. ${g.role}` : g.role,
           deepLink,
         ),
       )
     ));
   }
+  return { triage, source: aiTriage ? "ai" : "fallback", count: chosen.length };
+}
 
+async function recordTriage(db: SupabaseClient, incidentId: string, triage: Triage, source: "ai" | "fallback") {
   await db.from("incidents").update({
     urgency: triage.urgency,
     category: triage.category,
     call_911_recommended: triage.call_911_recommended,
     brief: triage.summary,
     brief_at: new Date().toISOString(),
-    triage_source: aiTriage ? "ai" : "fallback",
-  }).eq("id", incident.id);
-  await db.from("incident_events").insert({ incident_id: incident.id, kind: "triaged", body: triage.summary });
-
-  return {
-    status: "dispatched" as const,
-    triage_source: aiTriage ? "ai" : "fallback",
-    urgency: triage.urgency,
-    call_911_recommended: triage.call_911_recommended,
-    circle_alerted: circle.length,
-    guardians_sent: chosen.length,
-  };
+    triage_source: source,
+  }).eq("id", incidentId);
+  await db.from("incident_events").insert({ incident_id: incidentId, kind: "triaged", body: triage.summary });
 }

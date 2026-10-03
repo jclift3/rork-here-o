@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Check, Plus } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { IncidentMap } from '@/components/IncidentMap';
@@ -10,12 +10,14 @@ import { watchPosition } from '@/lib/location';
 import { useUserId } from '@/lib/session';
 import { friendlyError } from '@/lib/supabase';
 import { colors, fonts } from '@/lib/theme';
+import { arrivedLabel, followerTitle, TRIP_KINDS, tripTitle } from '@/lib/trips';
 import type { Walk } from '@/lib/types';
 import {
   clockTime,
   describeDue,
   endWalk,
   extendWalk,
+  finishTrip,
   EXTEND_MINUTES,
   GRACE_MINUTES,
   shareWalkLocation,
@@ -62,6 +64,14 @@ function WalkerView({ walk, userId, now, reload }: { walk: Walk; userId: string;
     return () => stop();
   }, [active, walk.id]);
 
+  // The trip ended somewhere else (arrival, the server, another device):
+  // stop reminders, background sharing and the Live Activity.
+  const lastStatus = useRef(walk.status);
+  useEffect(() => {
+    if (lastStatus.current === 'active' && walk.status !== 'active') finishTrip(walk, walk.status);
+    lastStatus.current = walk.status;
+  }, [walk]);
+
   const run = async (key: string, fn: () => Promise<unknown>) => {
     setBusy(key);
     try {
@@ -80,9 +90,9 @@ function WalkerView({ walk, userId, now, reload }: { walk: Walk; userId: string;
         userId,
         mode: walk.mode,
         trigger: 'tap',
-        note: walk.destination ? `Asked for help while walking to ${walk.destination}.` : 'Asked for help during a walk.',
+        note: `Asked for help during a trip (${tripTitle(walk).toLowerCase()}).`,
       });
-      await endWalk(walk.id, 'cancelled');
+      await endWalk(walk, 'cancelled');
       router.replace({ pathname: '/incident/[id]', params: { id: incidentId } });
     });
 
@@ -92,7 +102,7 @@ function WalkerView({ walk, userId, now, reload }: { walk: Walk; userId: string;
         <BackButton />
         <Card tone="alert">
           <Text style={styles.cardTitle}>You missed your check-in</Text>
-          <Body>Your circle and nearby guardians have been alerted. If you’re OK, open the request and tap I’m safe.</Body>
+          <Body>Your circle has been alerted. If you’re OK, open the request and tap I’m safe.</Body>
         </Card>
         {walk.incident_id && (
           <Button
@@ -111,8 +121,16 @@ function WalkerView({ walk, userId, now, reload }: { walk: Walk; userId: string;
       <Screen>
         <BackButton />
         <Card tone="safe">
-          <Text style={styles.cardTitle}>{walk.status === 'arrived' ? 'You’re checked in' : 'Walk cancelled'}</Text>
-          <Body>{walk.status === 'arrived' ? 'Your circle can see you arrived safely.' : 'Your circle is no longer following.'}</Body>
+          <Text style={styles.cardTitle}>
+            {walk.status === 'arrived' ? arrivedLabel(walk) : `${TRIP_KINDS[walk.kind].label} cancelled`}
+          </Text>
+          <Body>
+            {walk.status !== 'arrived'
+              ? 'Your circle is no longer following.'
+              : walk.arrived_automatically
+                ? 'You reached your destination, so the trip ended and your circle knows you’re safe.'
+                : 'Your circle knows you arrived safely.'}
+          </Body>
         </Card>
         <Button label="Done" variant="outline" onPress={() => router.replace('/home')} />
       </Screen>
@@ -124,7 +142,7 @@ function WalkerView({ walk, userId, now, reload }: { walk: Walk; userId: string;
     <Screen>
       <BackButton />
       <Pill label="Your circle is following" color={colors.heroStart} filled />
-      <Title>{walk.destination ? `Walking to ${walk.destination}` : 'Walk in progress'}</Title>
+      <Title>{tripTitle(walk)}</Title>
       <View style={{ gap: 2 }}>
         <Text style={[styles.countdown, late && { color: colors.alert }]}>{describeDue(walk.due_at, now)}</Text>
         <Body muted>
@@ -142,7 +160,7 @@ function WalkerView({ walk, userId, now, reload }: { walk: Walk; userId: string;
         tall
         loading={busy === 'arrived'}
         icon={<Check color={colors.paper} size={20} />}
-        onPress={() => run('arrived', () => endWalk(walk.id, 'arrived'))}
+        onPress={() => run('arrived', () => endWalk(walk, 'arrived'))}
       />
       <Button
         label={`Add ${EXTEND_MINUTES} minutes`}
@@ -154,10 +172,10 @@ function WalkerView({ walk, userId, now, reload }: { walk: Walk; userId: string;
       <Button label="Get help now" variant="hero" tall loading={busy === 'help'} onPress={getHelp} />
       <Button label="Call 911" variant="alert" onPress={() => call911(null, userId, true)} />
       <Button
-        label="Cancel walk"
+        label={`Cancel ${TRIP_KINDS[walk.kind].noun}`}
         variant="ghost"
         loading={busy === 'cancel'}
-        onPress={() => run('cancel', () => endWalk(walk.id, 'cancelled'))}
+        onPress={() => run('cancel', () => endWalk(walk, 'cancelled'))}
       />
     </Screen>
   );
@@ -168,11 +186,11 @@ function FollowerView({ walk, userId, now }: { walk: Walk; userId: string; now: 
   const late = walk.status === 'active' && new Date(walk.due_at).getTime() < now;
   const statusLine =
     walk.status === 'arrived'
-      ? `${name} checked in safely at ${clockTime(walk.ended_at ?? walk.due_at)}.`
+      ? `${arrivedLabel(walk)}: ${name} ${walk.arrived_automatically ? 'arrived' : 'checked in'} at ${clockTime(walk.ended_at ?? walk.due_at)}.`
       : walk.status === 'cancelled'
-        ? `${name} ended the walk.`
+        ? `${name} ended the ${TRIP_KINDS[walk.kind].noun}.`
         : walk.status === 'escalated'
-          ? `${name} missed their check-in. HereO has alerted you and nearby guardians.`
+          ? `${name} missed their check-in. HereO has alerted their circle.`
           : late
             ? `${name} is ${describeDue(walk.due_at, now)} checking in.`
             : `${name} will check in by ${clockTime(walk.due_at)}.`;
@@ -180,7 +198,7 @@ function FollowerView({ walk, userId, now }: { walk: Walk; userId: string; now: 
   return (
     <Screen>
       <BackButton />
-      <Title>{walk.destination ? `${name} is walking to ${walk.destination}` : `${name} is on a walk`}</Title>
+      <Title>{followerTitle(name, walk)}</Title>
       <Card tone={walk.status === 'escalated' || late ? 'alert' : walk.status === 'arrived' ? 'safe' : 'mist'}>
         <Body>{statusLine}</Body>
         {walk.location_at && walk.status === 'active' && (

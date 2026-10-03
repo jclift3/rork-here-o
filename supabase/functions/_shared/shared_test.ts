@@ -184,3 +184,26 @@ Deno.test("check-ins only accepts the scheduler secret", async () => {
   assertFalse(isServiceRequest(null, "secret-key"));
   assertFalse(isServiceRequest("Bearer ", undefined));
 });
+
+Deno.test("trip messages name the person and place", async () => {
+  const { tripStartedMessage, tripArrivedMessage } = await import("./walks.ts");
+  const due = new Date().toISOString();
+  assertEquals(
+    tripStartedMessage("Sam", { kind: "walk", destination: "Home", due_at: due }).title,
+    "Sam started a walk home",
+  );
+  assertEquals(
+    tripStartedMessage("Sam", { kind: "run", destination: "the gym", due_at: due }).title,
+    "Sam started a run to the gym",
+  );
+  assertEquals(tripStartedMessage("Sam", { kind: "ride", destination: null, due_at: due }).title, "Sam started a ride");
+  assertEquals(tripArrivedMessage("Sam", { kind: "walk", destination: null, due_at: due }).title, "Sam is home safe");
+  assertEquals(
+    tripArrivedMessage("Sam", { kind: "walk", destination: " home ", due_at: due }).title,
+    "Sam is home safe",
+  );
+  assertEquals(
+    tripArrivedMessage("Sam", { kind: "ride", destination: "work", due_at: due }).title,
+    "Sam arrived at work",
+  );
+});

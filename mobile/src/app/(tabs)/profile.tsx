@@ -8,10 +8,13 @@ import {
   isGuardianBackgroundLocationOn,
   startGuardianBackgroundLocation,
   stopGuardianBackgroundLocation,
+  stopTripBackgroundLocation,
 } from '@/lib/backgroundLocation';
+import { getQuickPosition } from '@/lib/location';
 import { useSession } from '@/lib/session';
 import { friendlyError, supabase } from '@/lib/supabase';
 import { colors, fonts, space } from '@/lib/theme';
+import { loadTripSettings, saveHome, setAlertGuardians, type TripSettings } from '@/lib/trips';
 
 export default function Profile() {
   const { session, profile, refreshProfile } = useSession();
@@ -98,6 +101,8 @@ export default function Profile() {
         onPress={() => router.push('/guardian')}
       />
 
+      {session && <TripsSettings userId={session.user.id} />}
+
       <SectionLabel>Name</SectionLabel>
       <TextField value={name} onChangeText={setName} maxLength={60} />
       <Button label="Save name" variant="outline" disabled={!name.trim() || name === profile?.display_name} onPress={() => update({ display_name: name.trim() })} />
@@ -112,10 +117,80 @@ export default function Profile() {
 
       <Button label="Sign out" variant="ghost" onPress={async () => {
           await stopGuardianBackgroundLocation();
+          await stopTripBackgroundLocation();
           await supabase.auth.signOut();
           router.replace('/welcome');
         }} />
     </Screen>
+  );
+}
+
+function TripsSettings({ userId }: { userId: string }) {
+  const [settings, setSettings] = useState<TripSettings | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadTripSettings(userId).then(setSettings);
+  }, [userId]);
+
+  const save = async (fn: () => Promise<void>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await fn();
+      setSettings(await loadTripSettings(userId));
+    } catch (err) {
+      setError(friendlyError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const setHereAsHome = () =>
+    save(async () => {
+      const pos = await getQuickPosition(8000);
+      if (!pos) throw new Error('We couldn’t find your location. Check that HereO can use it, then try again.');
+      await saveHome(userId, pos);
+    });
+
+  if (!settings) return null;
+  return (
+    <>
+      <SectionLabel>Trips</SectionLabel>
+      <Card style={{ gap: space.sm }}>
+        <Text style={styles.rowTitle}>Home</Text>
+        <Body muted>
+          {settings.home
+            ? 'Saved. Trips home end by themselves when you get there, and your circle hears you’re home safe.'
+            : 'Save where home is and trips home end by themselves when you arrive. Only HereO uses it.'}
+        </Body>
+        <Button
+          label={settings.home ? 'Update home to where I am now' : 'Set home to where I am now'}
+          variant="outline"
+          loading={busy}
+          onPress={setHereAsHome}
+        />
+        {settings.home && <Button label="Forget home" variant="ghost" onPress={() => save(() => saveHome(userId, null))} />}
+      </Card>
+      <Card style={styles.row}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rowTitle}>Also alert nearby guardians if I don’t respond</Text>
+          <Body muted>
+            A missed check-in always alerts your circle. With this on, if you still haven’t answered 5 minutes later,
+            nearby guardians are asked to check on you too. They’re told it’s an unanswered check-in, not a confirmed
+            emergency.
+          </Body>
+        </View>
+        <Switch
+          value={settings.alertGuardians}
+          disabled={busy}
+          onValueChange={(v) => save(() => setAlertGuardians(userId, v))}
+          trackColor={{ true: colors.heroStart, false: colors.line }}
+        />
+      </Card>
+      {error && <Body style={{ color: colors.alert }}>{error}</Body>}
+    </>
   );
 }
 

@@ -12,6 +12,7 @@ import { useSession, useUserId } from '@/lib/session';
 import { friendlyError, supabase } from '@/lib/supabase';
 import { colors, fonts, radius, space } from '@/lib/theme';
 import type { HelpMode, Incident, Walk } from '@/lib/types';
+import { followerTitle, tripTitle } from '@/lib/trips';
 import { clockTime, describeDue, loadActiveWalks } from '@/lib/walks';
 
 interface Assignment {
@@ -112,10 +113,7 @@ export default function Home() {
             <Card style={styles.row}>
               <Footprints color={colors.heroStart} />
               <View style={{ flex: 1, gap: 2 }}>
-                <Text style={styles.rowTitle}>
-                  {mineWalk ? 'Your walk' : `${name} is walking`}
-                  {w.destination ? ` to ${w.destination}` : ''}
-                </Text>
+                <Text style={styles.rowTitle}>{mineWalk ? `You’re ${lower(tripTitle(w))}` : followerTitle(name, w)}</Text>
                 <Body muted>
                   {mineWalk ? `${describeDue(w.due_at)} · check in by ${clockTime(w.due_at)}` : `Due by ${clockTime(w.due_at)}`}
                 </Body>
@@ -137,7 +135,7 @@ export default function Home() {
 
       <View style={styles.quickRow}>
         <QuickAction
-          label="Walk with me"
+          label="Start a trip"
           icon={<Footprints color={colors.ink} />}
           disabled={walks.some((w) => w.user_id === userId)}
           onPress={() => router.push('/walk')}
@@ -242,3 +240,7 @@ const styles = StyleSheet.create({
   switchItem: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.pill, minHeight: 36, justifyContent: 'center' },
   switchText: { fontWeight: '800', fontSize: 13 },
 });
+
+function lower(s: string) {
+  return s.charAt(0).toLowerCase() + s.slice(1);
+}

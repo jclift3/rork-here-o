@@ -65,13 +65,20 @@ export const COURSES = [
 export type CourseId = (typeof COURSES)[number]['id'];
 
 export type WalkStatus = 'active' | 'arrived' | 'cancelled' | 'escalated';
+export type TripKind = 'walk' | 'run' | 'ride';
 
+/** A trip. Stored in the walks table, which predates runs and rides. */
 export interface Walk {
   id: string;
   user_id: string;
   mode: HelpMode;
+  kind: TripKind;
   status: WalkStatus;
   destination: string | null;
+  dest_lat: number | null;
+  dest_lng: number | null;
+  /** True when the trip ended because the traveller reached the destination. */
+  arrived_automatically: boolean;
   started_at: string;
   due_at: string;
   lat: number | null;

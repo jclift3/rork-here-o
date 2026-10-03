@@ -2,31 +2,45 @@ import * as Notifications from 'expo-notifications';
 import { useCallback, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
+import { startTripBackgroundLocation, stopTripBackgroundLocation } from './backgroundLocation';
 import { getQuickPosition } from './location';
 import { supabase } from './supabase';
-import type { HelpMode, Walk } from './types';
+import { hideTrip, showTrip } from './tripActivity';
+import { arrivedLabel, tripTitle } from './trips';
+import type { HelpMode, TripKind, Walk } from './types';
 
 /** Minutes the server waits past due_at before it alerts the circle. Matches escalate_overdue_walks(). */
 export const GRACE_MINUTES = 2;
-export const DURATIONS = [10, 15, 20, 30, 45, 60] as const;
+export const DURATIONS = [10, 15, 20, 30, 45, 60, 90] as const;
 export const EXTEND_MINUTES = 10;
 
 const WALK_SELECT = '*, profiles:user_id(display_name)';
 
+/**
+ * Starts a trip. The circle hears about it from the server as soon as the row
+ * exists. With a destination point, the trip ends itself on arrival.
+ */
 export async function startWalk(opts: {
   userId: string;
   mode: HelpMode;
   minutes: number;
+  kind?: TripKind;
   destination?: string;
+  destinationPoint?: { lat: number; lng: number } | null;
 }): Promise<string> {
   const pos = await getQuickPosition();
   const dueAt = new Date(Date.now() + opts.minutes * 60_000);
+  const kind = opts.kind ?? 'walk';
+  const destination = opts.destination?.trim() || null;
   const { data, error } = await supabase
     .from('walks')
     .insert({
       user_id: opts.userId,
       mode: opts.mode,
-      destination: opts.destination?.trim() || null,
+      kind,
+      destination,
+      dest_lat: opts.destinationPoint?.lat ?? null,
+      dest_lng: opts.destinationPoint?.lng ?? null,
       due_at: dueAt.toISOString(),
       lat: pos?.lat ?? null,
       lng: pos?.lng ?? null,
@@ -36,13 +50,24 @@ export async function startWalk(opts: {
     .single();
   if (error) throw error;
   await scheduleReminders(data.id, dueAt);
+  await showTrip({ id: data.id, kind, title: tripTitle({ kind, destination }), dueAt });
+  startTripBackgroundLocation();
   return data.id;
 }
 
-export async function endWalk(walkId: string, status: 'arrived' | 'cancelled') {
-  const { error } = await supabase.from('walks').update({ status }).eq('id', walkId).eq('status', 'active');
+export async function endWalk(walk: Pick<Walk, 'id' | 'kind' | 'destination'>, status: 'arrived' | 'cancelled') {
+  const { error } = await supabase.from('walks').update({ status }).eq('id', walk.id).eq('status', 'active');
   if (error) throw error;
-  await cancelReminders(walkId);
+  await finishTrip(walk, status);
+}
+
+/** Local clean-up once a trip has ended, however it ended. */
+export async function finishTrip(walk: Pick<Walk, 'id' | 'kind' | 'destination'>, status: Walk['status']) {
+  await cancelReminders(walk.id);
+  await stopTripBackgroundLocation();
+  await hideTrip(
+    status === 'arrived' ? { kind: walk.kind, title: tripTitle(walk), label: arrivedLabel(walk) } : undefined,
+  );
 }
 
 export async function extendWalk(walk: Walk, minutes = EXTEND_MINUTES) {
@@ -52,6 +77,7 @@ export async function extendWalk(walk: Walk, minutes = EXTEND_MINUTES) {
   const { error } = await supabase.from('walks').update({ due_at: dueAt.toISOString() }).eq('id', walk.id);
   if (error) throw error;
   await scheduleReminders(walk.id, dueAt);
+  await showTrip({ id: walk.id, kind: walk.kind, title: tripTitle(walk), dueAt });
 }
 
 export async function shareWalkLocation(walkId: string, lat: number, lng: number) {
