@@ -8,6 +8,8 @@ interface SessionState {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  /** Signed in, but this user's profile hasn't loaded yet (just after sign-in). */
+  profileLoading: boolean;
   refreshProfile: () => Promise<void>;
 }
 
@@ -15,6 +17,7 @@ const SessionContext = createContext<SessionState>({
   session: null,
   profile: null,
   loading: true,
+  profileLoading: false,
   refreshProfile: async () => {},
 });
 
@@ -22,10 +25,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  // Whose profile the current `profile` is, once loaded (even if there's no row).
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
 
   const loadProfile = useCallback(async (userId: string | undefined) => {
     if (!userId) {
       setProfile(null);
+      setLoadedFor(null);
       return;
     }
     const { data } = await supabase
@@ -34,6 +40,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       .eq('id', userId)
       .maybeSingle<Profile>();
     setProfile(data ?? null);
+    setLoadedFor(userId);
   }, []);
 
   useEffect(() => {
@@ -50,9 +57,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [loadProfile]);
 
   const refreshProfile = useCallback(() => loadProfile(session?.user.id), [loadProfile, session]);
+  const profileLoading = !!session && loadedFor !== session.user.id;
 
   return (
-    <SessionContext.Provider value={{ session, profile, loading, refreshProfile }}>{children}</SessionContext.Provider>
+    <SessionContext.Provider value={{ session, profile, loading, profileLoading, refreshProfile }}>{children}</SessionContext.Provider>
   );
 }
 

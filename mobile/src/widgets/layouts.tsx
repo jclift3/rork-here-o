@@ -65,8 +65,8 @@ export const TripActivity: LiveActivityComponent<TripActivityProps> = (props) =>
 };
 
 export type StartTripWidgetProps = {
-  /** The trip in progress, if any. */
-  active?: { title: string; dueAt: number; url: string } | null;
+  /** The trip in progress, if any. Omit it rather than null: null can't be saved. */
+  active?: { title: string; dueAt: number; url: string };
 };
 
 export const StartTripWidget = (props: StartTripWidgetProps, env: WidgetEnvironment) => {

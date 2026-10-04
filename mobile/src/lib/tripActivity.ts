@@ -1,3 +1,4 @@
+import { requireOptionalNativeModule } from 'expo';
 import { Platform } from 'react-native';
 
 import type { TripKind } from './types';
@@ -20,9 +21,11 @@ let cached: Widgets | null | undefined;
 function widgets(): Widgets | null {
   if (cached !== undefined) return cached;
   cached = null;
-  if (Platform.OS !== 'ios') return cached;
+  // Expo Go has no ExpoWidgets module. Check first: requiring expo-widgets
+  // there throws while the module loads, which shows a red error screen in
+  // development even inside try/catch.
+  if (Platform.OS !== 'ios' || !requireOptionalNativeModule('ExpoWidgets')) return cached;
   try {
-    // Lazy: the native module throws when it's missing (Expo Go).
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { createLiveActivity, createWidget } = require('expo-widgets') as typeof import('expo-widgets');
     const { StartTripWidget, TripActivity } = require('../widgets/layouts') as typeof import('../widgets/layouts');
@@ -80,7 +83,9 @@ export async function hideTrip(outcome?: { kind: TripKind; title: string; label:
     console.warn('could not end trip Live Activity', err);
   }
   try {
-    w.widget.updateSnapshot({ active: null });
+    // Leave `active` out rather than null: widget props are saved to
+    // UserDefaults, which can't hold null, and the update throws.
+    w.widget.updateSnapshot({});
   } catch (err) {
     console.warn('could not reset trip widget', err);
   }
