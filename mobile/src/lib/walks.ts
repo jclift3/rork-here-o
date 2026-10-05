@@ -144,8 +144,11 @@ export function useWalk(walkId: string) {
 
   useEffect(() => {
     const first = setTimeout(load, 0);
+    // A unique name per screen: supabase-js reuses a channel with the same
+    // name, and adding listeners to one that's already subscribed throws, so
+    // the same trip open twice (say, from a notification) would crash.
     const channel = supabase
-      .channel(`walk:${walkId}`)
+      .channel(`walk:${walkId}:${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'walks', filter: `id=eq.${walkId}` }, load)
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') load();

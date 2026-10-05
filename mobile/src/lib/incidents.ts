@@ -159,8 +159,9 @@ export function useIncident(incidentId: string) {
 
   useEffect(() => {
     const first = setTimeout(load, 0);
+    // Unique per screen; see useWalk.
     const channel = supabase
-      .channel(`incident:${incidentId}`)
+      .channel(`incident:${incidentId}:${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'incidents', filter: `id=eq.${incidentId}` }, load)
       .on(
         'postgres_changes',
