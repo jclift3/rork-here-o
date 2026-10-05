@@ -194,11 +194,20 @@ function FollowerView({ walk, userId, now }: { walk: Walk; userId: string; now: 
           : late
             ? `${name} is ${describeDue(walk.due_at, now)} checking in.`
             : `${name} will check in by ${clockTime(walk.due_at)}.`;
+  // The heading follows the trip: once it ends, it says how it ended.
+  const title =
+    walk.status === 'arrived'
+      ? `${name} is ${arrivedLabel(walk).toLowerCase()}`
+      : walk.status === 'escalated'
+        ? `${name} missed a check-in`
+        : walk.status === 'cancelled'
+          ? `${name}’s ${TRIP_KINDS[walk.kind].noun} has ended`
+          : followerTitle(name, walk);
 
   return (
     <Screen>
       <BackButton />
-      <Title>{followerTitle(name, walk)}</Title>
+      <Title>{title}</Title>
       <Card tone={walk.status === 'escalated' || late ? 'alert' : walk.status === 'arrived' ? 'safe' : 'mist'}>
         <Body>{statusLine}</Body>
         {walk.location_at && walk.status === 'active' && (
