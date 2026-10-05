@@ -10,7 +10,7 @@ import { watchPosition } from '@/lib/location';
 import { useUserId } from '@/lib/session';
 import { friendlyError } from '@/lib/supabase';
 import { colors, fonts } from '@/lib/theme';
-import { arrivedLabel, followerTitle, TRIP_KINDS, tripTitle } from '@/lib/trips';
+import { arrivedLabel, followerArrivedTitle, followerTitle, TRIP_KINDS, tripTitle } from '@/lib/trips';
 import type { Walk } from '@/lib/types';
 import {
   clockTime,
@@ -197,7 +197,7 @@ function FollowerView({ walk, userId, now }: { walk: Walk; userId: string; now: 
   // The heading follows the trip: once it ends, it says how it ended.
   const title =
     walk.status === 'arrived'
-      ? `${name} is ${arrivedLabel(walk).toLowerCase()}`
+      ? followerArrivedTitle(name, walk)
       : walk.status === 'escalated'
         ? `${name} missed a check-in`
         : walk.status === 'cancelled'

@@ -41,6 +41,11 @@ export function arrivedLabel(trip: TripLike): string {
   return isHome(trip.destination) ? 'Home safe' : 'Arrived safe';
 }
 
+/** "Sam is home safe", "Sam arrived safe". */
+export function followerArrivedTitle(name: string, trip: TripLike): string {
+  return isHome(trip.destination) ? `${name} is home safe` : `${name} arrived safe`;
+}
+
 export type TripSettings = { home: { lat: number; lng: number } | null; alertGuardians: boolean };
 
 export async function loadTripSettings(userId: string): Promise<TripSettings> {
