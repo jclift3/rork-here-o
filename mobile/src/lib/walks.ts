@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 
 import { startTripBackgroundLocation, stopTripBackgroundLocation } from './backgroundLocation';
 import { getQuickPosition } from './location';
+import { ensureNotificationPermission } from './notifications';
 import { supabase } from './supabase';
 import { hideTrip, showTrip } from './tripActivity';
 import { arrivedLabel, tripTitle } from './trips';
@@ -93,6 +94,7 @@ export async function shareWalkLocation(walkId: string, lat: number, lng: number
 async function scheduleReminders(walkId: string, dueAt: Date) {
   if (Platform.OS === 'web') return;
   await cancelReminders(walkId);
+  if (!(await ensureNotificationPermission())) return;
   const data = { walk_id: walkId, url: `hereo://walk/${walkId}` };
   const warnAt = new Date(dueAt.getTime() - 3 * 60_000);
   try {

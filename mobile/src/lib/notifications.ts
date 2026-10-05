@@ -15,20 +15,36 @@ Notifications.setNotificationHandler({
   }),
 });
 
+/**
+ * Asks for notification permission once. Needed on every iOS/Android build,
+ * simulators included, for local check-in reminders as well as push.
+ */
+export async function ensureNotificationPermission(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
+  try {
+    if (Platform.OS === 'android') {
+      // Must match channelId in supabase/functions/_shared/push.ts.
+      await Notifications.setNotificationChannelAsync('help-requests', {
+        name: 'Help requests',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 400, 200, 400],
+      });
+    }
+    const current = await Notifications.getPermissionsAsync();
+    if (current.granted) return true;
+    if (!current.canAskAgain) return false;
+    return (await Notifications.requestPermissionsAsync()).granted;
+  } catch (err) {
+    console.warn('notification permission failed', err);
+    return false;
+  }
+}
+
 /** Asks for permission and stores this device's push token on the user's private profile. */
 export async function registerForPush(userId: string): Promise<void> {
-  if (!Device.isDevice || Platform.OS === 'web') return;
-  if (Platform.OS === 'android') {
-    // Must match channelId in supabase/functions/_shared/push.ts.
-    await Notifications.setNotificationChannelAsync('help-requests', {
-      name: 'Help requests',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 400, 200, 400],
-    });
-  }
-  const current = await Notifications.getPermissionsAsync();
-  const status = current.granted ? 'granted' : (await Notifications.requestPermissionsAsync()).status;
-  if (status !== 'granted') return;
+  if (!(await ensureNotificationPermission())) return;
+  // Push tokens need a real device and an EAS project id.
+  if (!Device.isDevice) return;
   const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
   try {
     const { data: token } = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
