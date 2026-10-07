@@ -207,3 +207,21 @@ Deno.test("trip messages name the person and place", async () => {
     "Sam arrived at work",
   );
 });
+
+Deno.test("ring messages give a distance, never a name", async () => {
+  const { describeRingDistance, duressMessage, ringMessage, RING_PUSH } = await import("./ring.ts");
+  assertEquals(describeRingDistance(52), "50 m away");
+  assertEquals(describeRingDistance(3), "10 m away");
+  assertEquals(describeRingDistance(1460), "1.5 km away");
+  const walk = ringMessage({ distance_m: 230, travel: "foot" });
+  assertEquals(walk.title, "Someone nearby needs help");
+  assert(walk.body.startsWith("230 m away."));
+  assert(walk.body.includes("never confront"));
+  assert(ringMessage({ distance_m: 1200, travel: "drive" }).body.includes("Park first"));
+  assert(duressMessage("Tess Ng").title.startsWith("Tess"));
+  const [msg] = buildPushMessages(["ExponentPushToken[a]"], "t", "b", {}, RING_PUSH);
+  assertEquals(msg.sound, "hereo-ring.wav");
+  assertEquals(msg.channelId, "hereo-ring");
+  assertEquals(msg.interruptionLevel, "time-sensitive");
+  assertFalse("interruptionLevel" in buildPushMessages(["ExponentPushToken[a]"], "t", "b", {})[0]);
+});

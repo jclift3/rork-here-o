@@ -7,7 +7,7 @@
   },
   "tasks": {
     "test": "deno test _shared/",
-    "check": "deno check dispatch/index.ts brief/index.ts check-ins/index.ts sign-up/index.ts"
+    "check": "deno check dispatch/index.ts brief/index.ts check-ins/index.ts sign-up/index.ts ring/index.ts"
   },
   "imports": {
     "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@0.131.0",

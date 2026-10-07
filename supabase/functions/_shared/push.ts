@@ -7,9 +7,18 @@ export interface PushMessage {
   title: string;
   body: string;
   data: Record<string, unknown>;
-  sound: "default";
+  sound: string;
   priority: "high";
   channelId: string;
+  interruptionLevel?: "active" | "time-sensitive" | "critical";
+}
+
+export interface PushOptions {
+  /** A sound bundled with the app (iOS), or "default". */
+  sound?: string;
+  /** Android channel; its sound is set when the app creates it. */
+  channelId?: string;
+  interruptionLevel?: PushMessage["interruptionLevel"];
 }
 
 export function buildPushMessages(
@@ -17,6 +26,7 @@ export function buildPushMessages(
   title: string,
   body: string,
   data: Record<string, unknown>,
+  options: PushOptions = {},
 ): PushMessage[] {
   const unique = [...new Set(tokens.filter((t): t is string => !!t && TOKEN_RE.test(t)))];
   return unique.map((to) => ({
@@ -24,9 +34,10 @@ export function buildPushMessages(
     title,
     body,
     data,
-    sound: "default",
+    sound: options.sound ?? "default",
     priority: "high",
-    channelId: "help-requests",
+    channelId: options.channelId ?? "help-requests",
+    ...(options.interruptionLevel ? { interruptionLevel: options.interruptionLevel } : {}),
   }));
 }
 

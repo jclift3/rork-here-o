@@ -14,6 +14,9 @@ export interface Incident {
   created_at: string;
   dispatched_at: string | null;
   brief_at: string | null;
+  alarm?: "loud" | "silent" | null;
+  ring_at?: string | null;
+  duress_at?: string | null;
 }
 
 /** A guardian the dispatcher could send, from nearby_guardians(). */

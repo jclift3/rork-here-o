@@ -11,6 +11,10 @@ otp_length = 6
 verify_jwt = true
 import_map = "./functions/deno.json"
 
+[functions.ring]
+verify_jwt = true
+import_map = "./functions/deno.json"
+
 [functions.brief]
 verify_jwt = true
 import_map = "./functions/deno.json"
