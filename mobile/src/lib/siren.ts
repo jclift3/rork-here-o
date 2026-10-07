@@ -9,9 +9,15 @@ import { Platform, Vibration } from 'react-native';
  * volume allows.
  */
 let player: AudioPlayer | null = null;
+let playing = false;
+
+export function isSirenPlaying() {
+  return playing;
+}
 
 export async function startSiren() {
-  if (Platform.OS === 'web') return;
+  if (Platform.OS === 'web' || playing) return;
+  playing = true;
   try {
     await setAudioModeAsync({
       playsInSilentMode: true,
@@ -34,6 +40,7 @@ export async function startSiren() {
 
 export function stopSiren() {
   if (Platform.OS === 'web') return;
+  playing = false;
   Vibration.cancel();
   try {
     player?.pause();

@@ -1,14 +1,13 @@
 import { router } from 'expo-router';
 import { Phone } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 
 import { HoldToHelp } from '@/components/HoldToHelp';
 import { Body, Button, Screen, TextField, Title } from '@/components/ui';
-import { call911, raiseAlert } from '@/lib/incidents';
+import { alertSendFailed, call911, raiseAlert } from '@/lib/incidents';
 import { useMode } from '@/lib/mode';
 import { useUserId } from '@/lib/session';
-import { friendlyError } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 
 /** What a tap on the center button opens: add a few words, then hold, or call 911. */
@@ -23,7 +22,7 @@ export default function Help() {
       setNote('');
       router.push({ pathname: '/incident/[id]', params: { id } });
     } catch (err) {
-      Alert.alert("Couldn't send your alert", `${friendlyError(err)}\n\nIf you are in danger, call 911.`);
+      alertSendFailed(err);
     }
   };
 

@@ -100,8 +100,10 @@ select set_ring_pin('duress', '9999', '1234');
 select pg_temp.expect((select has_pin and has_duress and strikes = 0 and not limited from ring_pin_status()), 'PINs set');
 
 -- Alice raises a loud request; the ring function rings Eve and Gary.
-insert into incidents (requester_id, trigger, alarm, lat, lng, location_at)
-values (auth.uid(), 'hold', 'loud', 40.7128, -74.0060, now());
+-- The app inserts and reads the row back in one statement.
+with i as (insert into incidents (requester_id, trigger, alarm, lat, lng, location_at)
+           values (auth.uid(), 'hold', 'loud', 40.7128, -74.0060, now()) returning id)
+select pg_temp.expect(count(*) = 1, 'a request can be created and read back in one statement') from i;
 reset role;
 insert into incident_responders (incident_id, user_id, kind)
 select id, '00000000-0000-0000-0000-00000000000b', 'circle' from incidents where status = 'active';

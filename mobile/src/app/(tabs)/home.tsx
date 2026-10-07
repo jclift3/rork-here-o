@@ -1,16 +1,16 @@
 import { router, useFocusEffect } from 'expo-router';
 import { ChevronRight, Footprints, PhoneIncoming, ShieldCheck } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { HoldToHelp } from '@/components/HoldToHelp';
 import { Body, Card, Pill, Screen, SectionLabel, Title } from '@/components/ui';
-import { raiseAlert } from '@/lib/incidents';
+import { alertSendFailed, raiseAlert } from '@/lib/incidents';
 import { getQuickPosition } from '@/lib/location';
 import { useMode } from '@/lib/mode';
 import { describeRingDistance, loadActiveRings, useDuress, type ActiveRing } from '@/lib/ring';
 import { useSession, useUserId } from '@/lib/session';
-import { friendlyError, supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { colors, fonts, radius, space } from '@/lib/theme';
 import type { HelpMode, Incident, Walk } from '@/lib/types';
 import { followerTitle, tripTitle } from '@/lib/trips';
@@ -77,7 +77,7 @@ export default function Home() {
       const id = await raiseAlert({ userId, mode, trigger: 'hold' });
       router.push({ pathname: '/incident/[id]', params: { id } });
     } catch (err) {
-      Alert.alert("Couldn't send your alert", `${friendlyError(err)}\n\nIf you are in danger, call 911.`);
+      alertSendFailed(err);
     }
   };
 

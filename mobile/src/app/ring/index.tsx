@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { Body, Button, Screen, Title } from '@/components/ui';
 import { call911, raiseAlert } from '@/lib/incidents';
+import { isSirenPlaying, stopSiren } from '@/lib/siren';
 import { useMode } from '@/lib/mode';
 import { useSession } from '@/lib/session';
 import { friendlyError } from '@/lib/supabase';
@@ -38,6 +39,8 @@ export default function RingNow() {
           <Body>{error}</Body>
           <Body>If you are in danger, call 911.</Body>
           <Button label="Call 911" variant="alert" tall onPress={() => call911(null, session?.user.id ?? '', true)} />
+          {isSirenPlaying() && <Button label="Stop the siren" variant="outline" onPress={stopSiren} />}
+          <Button label="Back to HereO" variant="ghost" onPress={() => router.replace('/home')} />
         </>
       )}
     </Screen>

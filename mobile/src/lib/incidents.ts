@@ -1,10 +1,11 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Linking, Platform } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 
 import { getQuickPosition } from './location';
 import { armRing, currentAlarmStyle } from './ring';
-import { supabase } from './supabase';
+import { isSirenPlaying, startSiren, stopSiren } from './siren';
+import { friendlyError, supabase } from './supabase';
 import type { HelpMode, Incident, IncidentEvent, Responder, ResponderStatus } from './types';
 
 const UNIQUE_VIOLATION = '23505';
@@ -24,6 +25,8 @@ export async function raiseAlert(opts: {
 }): Promise<string> {
   if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
   const alarm = currentAlarmStyle();
+  // The siren goes before any network call, so it sounds even if the request can't be sent.
+  if (alarm === 'loud') startSiren();
   const pos = await getQuickPosition();
   const { data, error } = await supabase
     .from('incidents')
@@ -57,6 +60,15 @@ export async function raiseAlert(opts: {
   dispatch(id);
   armRing(id, alarm);
   return id;
+}
+
+/** Shown when a help request could not be created. The siren keeps going until she stops it here. */
+export function alertSendFailed(err: unknown) {
+  Alert.alert("Couldn't send your alert", `${friendlyError(err)}\n\nIf you are in danger, call 911.`, [
+    { text: 'Call 911', onPress: () => Linking.openURL('tel:911') },
+    ...(isSirenPlaying() ? [{ text: 'Stop the siren', onPress: stopSiren }] : []),
+    { text: 'OK', style: 'cancel' as const },
+  ]);
 }
 
 /** Calls the dispatch function, retrying once. Idempotent on the server. */

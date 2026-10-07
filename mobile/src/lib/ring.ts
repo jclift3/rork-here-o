@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 
-import { updateIncidentLocation } from './incidents';
 import { watchPosition } from './location';
 import { startSiren, stopSiren } from './siren';
 import { supabase } from './supabase';
@@ -241,7 +240,11 @@ async function shareLocationQuietly(incidentId: string) {
   const stop = await watchPosition(async (c) => {
     if (Date.now() - last < 10_000) return;
     last = Date.now();
-    updateIncidentLocation(incidentId, c.lat, c.lng);
+    supabase
+      .from('incidents')
+      .update({ lat: c.lat, lng: c.lng, location_at: new Date().toISOString() })
+      .eq('id', incidentId)
+      .then(() => {});
     if (Date.now() - checked > 60_000) {
       checked = Date.now();
       const { data } = await supabase.from('incidents').select('status').eq('id', incidentId).maybeSingle();
