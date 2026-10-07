@@ -126,8 +126,11 @@ function ActiveRing({ card, reload }: { card: RingCard; reload: () => void }) {
           {address ? ` · ${address}` : ''}
         </Body>
         <IncidentMap lat={card.lat} lng={card.lng} label="Needs help" />
+        {card.my_status === 'en_route' && <Pill label="You’re on your way" color={colors.heroStart} filled />}
+        {card.my_status === 'on_scene' && <Pill label="You’re with them. Stay until they’re OK." color={colors.safe} filled />}
+        {card.my_status === 'declined' && <Body muted>You said you can’t go. Thanks for letting us know.</Body>}
         <Body muted>
-          {others === 0 ? 'Nobody has said they’re going yet.' : `${others} ${others === 1 ? 'other person is' : 'others are'} going.`}
+          {others === 0 ? (card.my_status === 'en_route' || card.my_status === 'on_scene' ? 'Nobody else has said they’re going yet.' : 'Nobody has said they’re going yet.') : `${others} ${others === 1 ? 'other person is' : 'others are'} going.`}
         </Body>
         <Card style={{ borderWidth: 2, borderColor: colors.heroStart, backgroundColor: colors.paper, gap: space.xs }}>
           <Text style={styles.cardLabel}>WHAT TO DO</Text>

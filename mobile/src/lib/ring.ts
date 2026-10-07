@@ -219,6 +219,14 @@ async function markDuress(incidentId: string) {
   shareLocationQuietly(incidentId);
 }
 
+/** She asked for help again on a request she had ended with her duress PIN: show it openly again. */
+export async function clearDuress(incidentId: string) {
+  if (!duress.has(incidentId)) return;
+  duress = new Set([...duress].filter((id) => id !== incidentId));
+  duressListeners.forEach((l) => l());
+  await AsyncStorage.setItem(DURESS_KEY, JSON.stringify([...duress])).catch(() => {});
+}
+
 export function useDuress(incidentId: string | null): boolean {
   const ids = useSyncExternalStore(
     (l) => {

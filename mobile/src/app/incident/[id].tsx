@@ -79,6 +79,9 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
   const [ending, setEnding] = useState<'resolved' | 'cancelled' | null>(null);
   // Set once she ends it here, with her PIN or her duress PIN: both look the same.
   const [ended, setEnded] = useState(false);
+  // The tap that hides the alarm screen can land on the buttons under it; ignore those briefly.
+  const [hiddenAt, setHiddenAt] = useState(0);
+  const justHidden = () => Date.now() - hiddenAt < 700;
   const active = incident.status === 'active';
 
   useEffect(() => {
@@ -114,6 +117,7 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
     }
   };
   const ask = (status: 'resolved' | 'cancelled') => {
+    if (justHidden()) return;
     if (pinStatus?.has_pin) return setEnding(status);
     const failed = (message: string | null) => message && Alert.alert('Could not close your request', message);
     if (status === 'resolved') {
@@ -160,6 +164,7 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
           onCall911={() => call911(incident.id, userId, true)}
           onImOk={() => ask('resolved')}
           onCancelWindow={cancelWindow}
+          onHide={() => setHiddenAt(Date.now())}
         />
       )}
       <PinSheet
@@ -193,7 +198,7 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
                 tall
                 style={{ flex: 1 }}
                 icon={<Phone color={colors.paper} size={20} />}
-                onPress={() => call911(incident.id, userId, true)}
+                onPress={() => !justHidden() && call911(incident.id, userId, true)}
               />
               <Button label="I'm safe" variant="safe" tall style={{ flex: 1 }} onPress={() => ask('resolved')} />
             </View>
@@ -206,6 +211,7 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
 
 /** What she sees after ending her request, with her PIN or her duress PIN alike. */
 function SafeNow() {
+  useEffect(() => disarmRing(), []);
   return (
     <Screen>
       <Title style={{ color: colors.safe }}>You&apos;re safe</Title>

@@ -16,10 +16,12 @@ export function AlarmOverlay({
   onCall911,
   onImOk,
   onCancelWindow,
+  onHide,
 }: {
   onCall911: () => void;
   onImOk: () => void;
   onCancelWindow: () => void;
+  onHide: () => void;
 }) {
   const flow = useRingFlow();
   const [hidden, setHidden] = useState(false);
@@ -45,7 +47,10 @@ export function AlarmOverlay({
   const counting = flow.phase === 'countdown';
 
   return (
-    <Modal visible animationType="fade" presentationStyle="fullScreen" onRequestClose={() => setHidden(true)}>
+    <Modal visible animationType="fade" presentationStyle="fullScreen" onRequestClose={() => {
+        onHide();
+        setHidden(true);
+      }}>
       <Animated.View style={[styles.fill, { backgroundColor: background }]}>
         <SafeAreaView style={styles.inner} edges={['top', 'bottom']}>
           <View style={styles.panel}>
@@ -67,7 +72,10 @@ export function AlarmOverlay({
                   onPress={onCall911}
                 />
                 <Button label="I'm OK" variant="safe" tall onPress={onImOk} />
-                <Button label="Hide this screen" variant="ghost" onPress={() => setHidden(true)} />
+                <Button label="Hide this screen" variant="ghost" onPress={() => {
+                    onHide();
+                    setHidden(true);
+                  }} />
               </>
             )}
           </View>

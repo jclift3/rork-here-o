@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Platform } from 'react-native';
 
 import { getQuickPosition } from './location';
-import { armRing, currentAlarmStyle } from './ring';
+import { armRing, clearDuress, currentAlarmStyle } from './ring';
 import { isSirenPlaying, startSiren, stopSiren } from './siren';
 import { friendlyError, supabase } from './supabase';
 import type { HelpMode, Incident, IncidentEvent, Responder, ResponderStatus } from './types';
@@ -53,6 +53,7 @@ export async function raiseAlert(opts: {
       .eq('status', 'active')
       .single();
     id = existing.data?.id;
+    if (id) await clearDuress(id);
   } else if (error) {
     throw error;
   }

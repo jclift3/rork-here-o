@@ -1,4 +1,4 @@
-import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
+import { createAudioPlayer, setAudioModeAsync, setIsAudioActiveAsync, type AudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { Platform, Vibration } from 'react-native';
 
@@ -24,6 +24,7 @@ export async function startSiren() {
       shouldPlayInBackground: true,
       interruptionMode: 'doNotMix',
     });
+    await setIsAudioActiveAsync(true);
     if (!player) {
       player = createAudioPlayer(require('../../assets/sounds/hereo-alarm.wav'));
       player.loop = true;
@@ -44,6 +45,8 @@ export function stopSiren() {
   Vibration.cancel();
   try {
     player?.pause();
+    // Hand the audio session back so her music or calls aren't held.
+    setIsAudioActiveAsync(false).catch(() => {});
   } catch {
     // Already released.
   }
