@@ -8,6 +8,7 @@ import { Body, Card, Pill, Screen, SectionLabel, Title } from '@/components/ui';
 import { raiseAlert } from '@/lib/incidents';
 import { getQuickPosition } from '@/lib/location';
 import { useMode } from '@/lib/mode';
+import { describeRingDistance, loadActiveRings, useDuress, type ActiveRing } from '@/lib/ring';
 import { useSession, useUserId } from '@/lib/session';
 import { friendlyError, supabase } from '@/lib/supabase';
 import { colors, fonts, radius, space } from '@/lib/theme';
@@ -32,9 +33,12 @@ export default function Home() {
   const [active, setActive] = useState<string | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [walks, setWalks] = useState<Walk[]>([]);
+  const [rings, setRings] = useState<ActiveRing[]>([]);
+  // After her duress PIN the request is still open, but her phone must look closed.
+  const duress = useDuress(active);
 
   const load = useCallback(async () => {
-    const [mine, circle, assigned, activeWalks] = await Promise.all([
+    const [mine, circle, assigned, activeWalks, activeRings] = await Promise.all([
       supabase.from('incidents').select('id').eq('requester_id', userId).eq('status', 'active').maybeSingle(),
       supabase.from('circle_members').select('member_id', { count: 'exact', head: true }).eq('owner_id', userId),
       supabase
@@ -44,8 +48,10 @@ export default function Home() {
         .in('status', ['notified', 'en_route', 'on_scene'])
         .eq('incidents.status', 'active'),
       loadActiveWalks(),
+      loadActiveRings(),
     ]);
     setWalks(activeWalks);
+    setRings(activeRings);
     setActive(mine.data?.id ?? null);
     setCircleCount(circle.count ?? 0);
     setAssignments((assigned.data ?? []) as unknown as Assignment[]);
@@ -86,7 +92,7 @@ export default function Home() {
         {` · ${circleCount} in your circle`}
       </Body>
 
-      {active && (
+      {active && !duress && (
         <Pressable onPress={() => router.push({ pathname: '/incident/[id]', params: { id: active } })}>
           <Card tone="alert" style={styles.row}>
             <Text style={styles.rowTitle}>Your help request is open</Text>
@@ -94,6 +100,15 @@ export default function Home() {
           </Card>
         </Pressable>
       )}
+
+      {rings.map((r) => (
+        <Pressable key={r.incident_id} onPress={() => router.push({ pathname: '/ring/[id]', params: { id: r.incident_id } })}>
+          <Card style={{ borderWidth: 2, borderColor: colors.alert }}>
+            <Pill label={r.my_status === 'notified' ? 'Someone nearby needs help' : 'You’re going'} color={colors.alert} filled />
+            <Body muted>{describeRingDistance(r.distance_m)} · Tap for the map</Body>
+          </Card>
+        </Pressable>
+      ))}
 
       {assignments.map((a) => (
         <Pressable key={a.incident_id} onPress={() => router.push({ pathname: '/incident/[id]', params: { id: a.incident_id } })}>

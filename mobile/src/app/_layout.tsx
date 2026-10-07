@@ -8,6 +8,7 @@ import { stopGuardianBackgroundLocation } from '@/lib/backgroundLocation';
 import { ModeProvider } from '@/lib/mode';
 import { registerForPush, routeNotificationTaps } from '@/lib/notifications';
 import { useGuardianPresence } from '@/lib/presence';
+import { refreshRingSettings, useRingSettings } from '@/lib/ring';
 import { SessionProvider, useSession } from '@/lib/session';
 import { colors } from '@/lib/theme';
 
@@ -20,12 +21,18 @@ function SignedInEffects() {
     if (userId) registerForPush(userId);
   }, [userId]);
   useEffect(() => (userId ? routeNotificationTaps() : undefined), [userId]);
-  const available = !!profile?.is_guardian && !!profile.guardian_available;
-  useGuardianPresence(userId, available);
-  // Availability can be turned off elsewhere (another device); stop tracking here too.
   useEffect(() => {
-    if (profile && !available) stopGuardianBackgroundLocation();
-  }, [profile, available]);
+    refreshRingSettings(userId);
+  }, [userId]);
+  const ring = useRingSettings();
+  const guardian = !!profile?.is_guardian && !!profile.guardian_available;
+  // Guardians and people who answer the HereO ring both need a fresh position.
+  const findable = guardian || !!ring?.optIn;
+  useGuardianPresence(userId, findable);
+  // Either can be turned off elsewhere (another device); stop tracking here too.
+  useEffect(() => {
+    if (profile && ring && !findable) stopGuardianBackgroundLocation();
+  }, [profile, ring, findable]);
   return null;
 }
 
@@ -48,6 +55,7 @@ function RootStack() {
         <Stack.Screen name="guardian" options={{ presentation: 'modal' }} />
         <Stack.Screen name="verify" options={{ presentation: 'modal' }} />
         <Stack.Screen name="walk/index" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="ring/index" options={{ gestureEnabled: false, animation: 'none' }} />
         <Stack.Screen name="fake-call" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
       </Stack>
     </>

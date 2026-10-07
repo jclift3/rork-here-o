@@ -16,8 +16,12 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "HereO uses your location in the background during a trip, so your circle can follow until you arrive, and while you're available as a guardian, so it can send you to someone nearby. Nobody else sees where you are.",
         "UIBackgroundModes": [
           "location",
-          "remote-notification"
+          "remote-notification",
+          "audio"
         ]
+      },
+      "entitlements": {
+        "com.apple.developer.usernotifications.time-sensitive": true
       }
     },
     "android": {
@@ -65,7 +69,17 @@
       [
         "expo-notifications",
         {
-          "color": "#E8338B"
+          "color": "#E8338B",
+          "sounds": [
+            "./assets/sounds/hereo-ring.wav"
+          ]
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "enableBackgroundPlayback": true
         }
       ],
       [

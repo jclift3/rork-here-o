@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, Platform } from 'react-native';
 
 import { getQuickPosition } from './location';
+import { armRing, currentAlarmStyle } from './ring';
 import { supabase } from './supabase';
 import type { HelpMode, Incident, IncidentEvent, Responder, ResponderStatus } from './types';
 
@@ -12,6 +13,8 @@ const UNIQUE_VIOLATION = '23505';
  * Creates an incident and starts dispatch. Returns the incident id as soon as
  * the row exists so the app can show the live screen immediately; dispatch
  * (circle alerts, AI triage, guardian alerts) continues in the background.
+ * The siren starts at once unless she chose silent, and HereO users nearby
+ * are rung after a short window in which she can cancel.
  */
 export async function raiseAlert(opts: {
   userId: string;
@@ -20,6 +23,7 @@ export async function raiseAlert(opts: {
   note?: string;
 }): Promise<string> {
   if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+  const alarm = currentAlarmStyle();
   const pos = await getQuickPosition();
   const { data, error } = await supabase
     .from('incidents')
@@ -27,6 +31,7 @@ export async function raiseAlert(opts: {
       requester_id: opts.userId,
       mode: opts.mode,
       trigger: opts.trigger,
+      alarm,
       note: opts.note?.trim() || null,
       lat: pos?.lat ?? null,
       lng: pos?.lng ?? null,
@@ -50,6 +55,7 @@ export async function raiseAlert(opts: {
   }
   if (!id) throw new Error('Could not start a help request');
   dispatch(id);
+  armRing(id, alarm);
   return id;
 }
 

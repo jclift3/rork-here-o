@@ -56,8 +56,8 @@ export async function startGuardianBackgroundLocation(): Promise<BackgroundResul
       activityType: Location.ActivityType.Other,
       showsBackgroundLocationIndicator: false,
       foregroundService: {
-        notificationTitle: 'You’re available as a guardian',
-        notificationBody: 'HereO can send you to someone nearby who needs help.',
+        notificationTitle: 'HereO can reach you',
+        notificationBody: 'So it can ring you if someone nearby needs help.',
         notificationColor: '#E8338B',
       },
     });

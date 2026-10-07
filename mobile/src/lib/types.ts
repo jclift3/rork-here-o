@@ -29,6 +29,10 @@ export interface Incident {
   triage_source: 'ai' | 'fallback' | null;
   dispatched_at: string | null;
   escalated_911_at: string | null;
+  /** How her phone sounded; null when nobody nearby was to be rung. */
+  alarm: 'loud' | 'silent' | null;
+  ring_at: string | null;
+  duress_at: string | null;
   created_at: string;
   resolved_at: string | null;
 }

@@ -5,6 +5,7 @@ import { Alert, KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IncidentMap } from '@/components/IncidentMap';
+import { AlarmOverlay, PinSheet } from '@/components/RingAlarm';
 import { Avatar, Body, Button, Card, Pill, Screen, SectionLabel, Title } from '@/components/ui';
 import {
   call911,
@@ -17,6 +18,7 @@ import {
   type IncidentBundle,
 } from '@/lib/incidents';
 import { watchPosition } from '@/lib/location';
+import { disarmRing, endHelpRequest, loadPinStatus, notifyRingEnded, useDuress, useRingFlow, type PinStatus } from '@/lib/ring';
 import { useUserId } from '@/lib/session';
 import { friendlyError, supabase } from '@/lib/supabase';
 import { colors, fonts, space } from '@/lib/theme';
@@ -71,7 +73,17 @@ function BackButton() {
 
 function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: string }) {
   const { incident, responders } = bundle;
+  const duress = useDuress(incident.id);
+  const flow = useRingFlow();
+  const [pinStatus, setPinStatus] = useState<PinStatus | null>(null);
+  const [ending, setEnding] = useState<'resolved' | 'cancelled' | null>(null);
+  // Set once she ends it here, with her PIN or her duress PIN: both look the same.
+  const [ended, setEnded] = useState(false);
   const active = incident.status === 'active';
+
+  useEffect(() => {
+    loadPinStatus().then(setPinStatus);
+  }, []);
 
   // Keep sharing location while the request is open.
   useEffect(() => {
@@ -86,16 +98,49 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
     return () => stop();
   }, [active, incident.id]);
 
-  const safe = () =>
-    Alert.alert("You're safe?", 'Everyone helping will be told they can stand down.', [
-      { text: 'Not yet', style: 'cancel' },
-      { text: "Yes, I'm safe", onPress: () => closeIncident(incident.id, 'resolved') },
-    ]);
-  const falseAlarm = () =>
-    Alert.alert('Cancel this request?', 'Use this if you pressed by mistake.', [
-      { text: 'Keep it open', style: 'cancel' },
-      { text: 'Cancel request', style: 'destructive', onPress: () => closeIncident(incident.id, 'cancelled') },
-    ]);
+  // Closed from another device: make sure the siren stops here too.
+  useEffect(() => {
+    if (!active && flow.incidentId === incident.id) disarmRing();
+  }, [active, flow.incidentId, incident.id]);
+
+  const end = async (status: 'resolved' | 'cancelled', pin: string | null): Promise<string | null> => {
+    try {
+      await endHelpRequest(incident.id, status, pin);
+      setEnding(null);
+      setEnded(true);
+      return null;
+    } catch (err) {
+      return friendlyError(err);
+    }
+  };
+  const ask = (status: 'resolved' | 'cancelled') => {
+    if (pinStatus?.has_pin) return setEnding(status);
+    const failed = (message: string | null) => message && Alert.alert('Could not close your request', message);
+    if (status === 'resolved') {
+      Alert.alert("You're safe?", 'Everyone helping will be told they can stand down.', [
+        { text: 'Not yet', style: 'cancel' },
+        { text: "Yes, I'm safe", onPress: async () => failed(await end('resolved', null)) },
+      ]);
+    } else {
+      Alert.alert('Cancel this request?', 'Use this if you pressed by mistake.', [
+        { text: 'Keep it open', style: 'cancel' },
+        { text: 'Cancel request', style: 'destructive', onPress: async () => failed(await end('cancelled', null)) },
+      ]);
+    }
+  };
+  // Inside the 3 second window nobody nearby has been rung yet, so no PIN.
+  const cancelWindow = async () => {
+    disarmRing();
+    try {
+      await closeIncident(incident.id, 'cancelled');
+      notifyRingEnded(incident.id);
+      setEnded(true);
+    } catch (err) {
+      Alert.alert('Could not cancel', friendlyError(err));
+    }
+  };
+
+  if (ended || duress) return <SafeNow />;
 
   const coming = responders.filter((r) => r.status === 'en_route' || r.status === 'on_scene');
   const headline = !active
@@ -110,19 +155,33 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+      {active && flow.incidentId === incident.id && (
+        <AlarmOverlay
+          onCall911={() => call911(incident.id, userId, true)}
+          onImOk={() => ask('resolved')}
+          onCancelWindow={cancelWindow}
+        />
+      )}
+      <PinSheet
+        visible={ending != null}
+        title={ending === 'cancelled' ? 'Enter your PIN to cancel' : 'Enter your PIN to end your alert'}
+        onSubmit={(pin) => end(ending ?? 'resolved', pin)}
+        onClose={() => setEnding(null)}
+      />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Screen edges={[]} style={{ paddingBottom: space.lg }}>
           <BackButton />
           <Title style={{ color: active ? colors.alert : colors.safe }}>{headline}</Title>
           <BriefCard bundle={bundle} />
           <IncidentMap lat={incident.lat} lng={incident.lng} label="You" />
+          {active && <NeighboursComing incidentId={incident.id} />}
           <SectionLabel>{responders.length ? 'Who knows' : 'Finding people nearby'}</SectionLabel>
           {responders.map((r) => (
             <ResponderRow key={r.user_id} responder={r} />
           ))}
           {!active && <ThankHelpers bundle={bundle} userId={userId} />}
           <Timeline bundle={bundle} userId={userId} />
-          {active && <Button label="I pressed by mistake" variant="ghost" onPress={falseAlarm} />}
+          {active && <Button label="I pressed by mistake" variant="ghost" onPress={() => ask('cancelled')} />}
         </Screen>
         {active && (
           <View style={styles.dock}>
@@ -136,12 +195,59 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
                 icon={<Phone color={colors.paper} size={20} />}
                 onPress={() => call911(incident.id, userId, true)}
               />
-              <Button label="I'm safe" variant="safe" tall style={{ flex: 1 }} onPress={safe} />
+              <Button label="I'm safe" variant="safe" tall style={{ flex: 1 }} onPress={() => ask('resolved')} />
             </View>
           </View>
         )}
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+/** What she sees after ending her request, with her PIN or her duress PIN alike. */
+function SafeNow() {
+  return (
+    <Screen>
+      <Title style={{ color: colors.safe }}>You&apos;re safe</Title>
+      <Body>Everyone who was helping has been told they can stand down.</Body>
+      <Button label="Done" variant="primary" onPress={() => router.replace('/home')} />
+    </Screen>
+  );
+}
+
+/** How many HereO users nearby were rung and are on their way. Never who. */
+function NeighboursComing({ incidentId }: { incidentId: string }) {
+  const [counts, setCounts] = useState<{ rung: number; going: number } | null>(null);
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase.from('ring_responders').select('status').eq('incident_id', incidentId);
+      if (!data) return;
+      setCounts({
+        rung: data.length,
+        going: data.filter((r) => r.status === 'en_route' || r.status === 'on_scene').length,
+      });
+    };
+    load();
+    const channel = supabase
+      .channel(`ring-count:${incidentId}:${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ring_responders', filter: `incident_id=eq.${incidentId}` }, load)
+      .subscribe();
+    const poll = setInterval(load, 15_000);
+    return () => {
+      clearInterval(poll);
+      supabase.removeChannel(channel);
+    };
+  }, [incidentId]);
+  if (!counts?.rung) return null;
+  return (
+    <Card>
+      <Text style={styles.cardLabel}>HEREO NEARBY</Text>
+      <Body>
+        {counts.going
+          ? `${counts.going} of ${counts.rung} people nearby ${counts.going === 1 ? 'is' : 'are'} on the way.`
+          : `${counts.rung} ${counts.rung === 1 ? 'person' : 'people'} nearby rung.`}
+      </Body>
+    </Card>
   );
 }
 
@@ -179,6 +285,15 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
             {me && <Pill label={me.kind === 'circle' ? 'Your circle' : 'Guardian'} color={colors.heroStart} />}
           </View>
           <Title style={{ fontSize: 30 }}>{active ? `${requesterName} needs help` : 'This request is closed'}</Title>
+          {active && incident.duress_at && (
+            <Card tone="alert">
+              <Text style={[styles.cardLabel, { color: colors.alert }]}>DURESS PIN USED</Text>
+              <Body>
+                {requesterName} ended the alert with their duress PIN. Their phone shows all clear, but they may not be
+                safe. Call 911 and don&apos;t tell them you know.
+              </Body>
+            </Card>
+          )}
           {me?.role && active && (
             <Card style={{ borderWidth: 2, borderColor: colors.heroStart, backgroundColor: colors.paper }}>
               <Text style={styles.cardLabel}>YOUR JOB</Text>

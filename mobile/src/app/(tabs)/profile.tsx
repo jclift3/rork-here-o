@@ -14,6 +14,7 @@ import { getQuickPosition } from '@/lib/location';
 import { useSession } from '@/lib/session';
 import { friendlyError, supabase } from '@/lib/supabase';
 import { colors, fonts, space } from '@/lib/theme';
+import { loadPinStatus, saveRingSettings, setRingPin, useRingSettings, type PinStatus } from '@/lib/ring';
 import { loadTripSettings, saveHome, setAlertGuardians, type TripSettings } from '@/lib/trips';
 
 export default function Profile() {
@@ -100,6 +101,8 @@ export default function Profile() {
         detail="Code of conduct and training"
         onPress={() => router.push('/guardian')}
       />
+
+      {session && <RingSettingsSection userId={session.user.id} />}
 
       {session && <TripsSettings userId={session.user.id} />}
 
@@ -191,6 +194,182 @@ function TripsSettings({ userId }: { userId: string }) {
       </Card>
       {error && <Body style={{ color: colors.alert }}>{error}</Body>}
     </>
+  );
+}
+
+/** Opts in to being rung, how she sounds, her PINs, and the shortcut that rings with no screen. */
+function RingSettingsSection({ userId }: { userId: string }) {
+  const ring = useRingSettings();
+  const [pins, setPins] = useState<PinStatus | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<'cancel' | 'duress' | null>(null);
+  const [pin, setPin] = useState('');
+  const [current, setCurrent] = useState('');
+
+  useEffect(() => {
+    loadPinStatus().then(setPins);
+  }, []);
+
+  const save = async (fn: () => Promise<void>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await fn();
+      setPins(await loadPinStatus());
+      return true;
+    } catch (err) {
+      setError(friendlyError(err));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const setOptIn = (on: boolean) => {
+    if (!on) return save(() => saveRingSettings(userId, { optIn: false }));
+    if (Platform.OS === 'web') return save(() => saveRingSettings(userId, { optIn: true }));
+    Alert.alert(
+      'Answer the HereO ring?',
+      'When someone within about half a mile (a mile if you drive) rings for help, your phone rings too and shows where. HereO checks your location in the background so it can find you. Nobody sees where you are.',
+      [
+        { text: 'Not now', style: 'cancel' },
+        {
+          text: 'Turn on',
+          onPress: async () => {
+            await save(() => saveRingSettings(userId, { optIn: true }));
+            const result = await startGuardianBackgroundLocation();
+            if (result === 'denied') {
+              Alert.alert('Location set to While Using', 'HereO can ring you while the app is open. You can choose Always in Settings.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const savePin = async () => {
+    const kind = editing;
+    if (!kind) return;
+    if (await save(() => setRingPin(kind, pin, current))) {
+      setEditing(null);
+      setPin('');
+      setCurrent('');
+    }
+  };
+
+  if (!ring) return null;
+  return (
+    <>
+      <SectionLabel>HereO ring</SectionLabel>
+      <Card style={styles.row}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rowTitle}>Ring me when someone nearby needs help</Text>
+          <Body muted>Go with someone else, knock and call out, stay with them. Never confront anyone.</Body>
+        </View>
+        <Switch value={ring.optIn} disabled={busy} onValueChange={(v) => void setOptIn(v)} trackColor={{ true: colors.heroStart, false: colors.line }} />
+      </Card>
+      {ring.optIn && (
+        <Choice
+          title="How I’d get there"
+          options={[
+            { value: 'foot', label: 'On foot' },
+            { value: 'drive', label: 'I can drive' },
+          ]}
+          value={ring.travel}
+          onChange={(travel) => save(() => saveRingSettings(userId, { travel }))}
+        />
+      )}
+      <Choice
+        title="When I ask for help, my phone"
+        options={[
+          { value: 'loud', label: 'Sounds a siren' },
+          { value: 'silent', label: 'Stays silent' },
+        ]}
+        value={ring.alarmStyle}
+        onChange={(alarmStyle) => save(() => saveRingSettings(userId, { alarmStyle }))}
+      />
+      <Card style={{ gap: space.sm }}>
+        <Text style={styles.rowTitle}>PIN to end an alert</Text>
+        <Body muted>
+          {pins?.has_pin
+            ? pins.has_duress
+              ? 'Set, with a duress PIN. The duress PIN looks like it ends the alert but keeps help coming and tells your circle.'
+              : 'Set. Add a duress PIN for when someone makes you end it: it looks the same, but help keeps coming.'
+            : 'Stops anyone else from ending your alert. Without one, “I’m safe” ends it.'}
+        </Body>
+        {editing ? (
+          <>
+            {pins?.has_pin && (
+              <TextField label="Current PIN" value={current} onChangeText={(t) => setCurrent(t.replace(/\D/g, ''))} keyboardType="number-pad" secureTextEntry maxLength={8} />
+            )}
+            <TextField
+              label={editing === 'duress' ? 'New duress PIN (4 to 8 digits)' : 'New PIN (4 to 8 digits)'}
+              value={pin}
+              onChangeText={(t) => setPin(t.replace(/\D/g, ''))}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={8}
+            />
+            <Button label="Save PIN" loading={busy} disabled={pin.length < 4 || (!!pins?.has_pin && current.length < 4)} onPress={savePin} />
+            <Button label="Back" variant="ghost" onPress={() => setEditing(null)} />
+          </>
+        ) : (
+          <>
+            <Button label={pins?.has_pin ? 'Change PIN' : 'Set a PIN'} variant="outline" onPress={() => setEditing('cancel')} />
+            {pins?.has_pin && (
+              <Button label={pins.has_duress ? 'Change duress PIN' : 'Add a duress PIN'} variant="outline" onPress={() => setEditing('duress')} />
+            )}
+          </>
+        )}
+      </Card>
+      {Platform.OS === 'ios' && (
+        <Card style={{ gap: space.xs }}>
+          <Text style={styles.rowTitle}>Ring without opening HereO</Text>
+          <Body muted>In the Shortcuts app, make a shortcut named “HereO ring” with one action: Open URLs, hereo://ring.</Body>
+          <Body muted>Then use it for Back Tap (Settings, Accessibility, Touch, Back Tap, Triple Tap), the Action Button, or say “Hey Siri, HereO ring”.</Body>
+        </Card>
+      )}
+      {pins && pins.strikes > 0 && (
+        <Card tone="alert">
+          <Body>
+            {pins.limited
+              ? 'Your alerts reach your circle and guardians only, because people nearby reported false alarms. This lifts 30 days after the last one.'
+              : 'Someone nearby reported one of your alerts as a false alarm. Another in 30 days limits your alerts to your circle and guardians.'}
+          </Body>
+        </Card>
+      )}
+      {error && <Body style={{ color: colors.alert }}>{error}</Body>}
+    </>
+  );
+}
+
+function Choice<T extends string>({
+  title,
+  options,
+  value,
+  onChange,
+}: {
+  title: string;
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <Card style={{ gap: space.sm }}>
+      <Text style={styles.rowTitle}>{title}</Text>
+      <View style={{ flexDirection: 'row', gap: space.sm }}>
+        {options.map((o) => (
+          <Button
+            key={o.value}
+            label={o.label}
+            variant={o.value === value ? 'primary' : 'outline'}
+            style={{ flex: 1 }}
+            onPress={() => onChange(o.value)}
+          />
+        ))}
+      </View>
+    </Card>
   );
 }
 
