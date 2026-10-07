@@ -78,7 +78,7 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
   const [pinStatus, setPinStatus] = useState<PinStatus | null>(null);
   const [ending, setEnding] = useState<'resolved' | 'cancelled' | null>(null);
   // Set once she ends it here, with her PIN or her duress PIN: both look the same.
-  const [ended, setEnded] = useState(false);
+  const [ended, setEnded] = useState<'resolved' | 'cancelled' | null>(null);
   // The tap that hides the alarm screen can land on the buttons under it; ignore those briefly.
   const [hiddenAt, setHiddenAt] = useState(0);
   const justHidden = () => Date.now() - hiddenAt < 700;
@@ -110,7 +110,8 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
     try {
       await endHelpRequest(incident.id, status, pin);
       setEnding(null);
-      setEnded(true);
+      // Same screen whether the PIN was real or duress.
+      setEnded(status);
       return null;
     } catch (err) {
       return friendlyError(err);
@@ -138,13 +139,13 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
     try {
       await closeIncident(incident.id, 'cancelled');
       notifyRingEnded(incident.id);
-      setEnded(true);
+      setEnded('cancelled');
     } catch (err) {
       Alert.alert('Could not cancel', friendlyError(err));
     }
   };
 
-  if (ended || duress) return <SafeNow />;
+  if (ended || duress) return <SafeNow cancelled={ended === 'cancelled'} />;
 
   const coming = responders.filter((r) => r.status === 'en_route' || r.status === 'on_scene');
   const headline = !active
@@ -210,12 +211,16 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
 }
 
 /** What she sees after ending her request, with her PIN or her duress PIN alike. */
-function SafeNow() {
+function SafeNow({ cancelled }: { cancelled: boolean }) {
   useEffect(() => disarmRing(), []);
   return (
     <Screen>
-      <Title style={{ color: colors.safe }}>You&apos;re safe</Title>
-      <Body>Everyone who was helping has been told they can stand down.</Body>
+      <Title style={{ color: colors.safe }}>{cancelled ? 'Alert cancelled' : 'You’re safe'}</Title>
+      <Body>
+        {cancelled
+          ? 'Anyone who was alerted has been told it was a mistake.'
+          : 'Everyone who was helping has been told they can stand down.'}
+      </Body>
       <Button label="Done" variant="primary" onPress={() => router.replace('/home')} />
     </Screen>
   );
@@ -223,14 +228,15 @@ function SafeNow() {
 
 /** How many HereO users nearby were rung and are on their way. Never who. */
 function NeighboursComing({ incidentId }: { incidentId: string }) {
-  const [counts, setCounts] = useState<{ rung: number; going: number } | null>(null);
+  const [counts, setCounts] = useState<{ rung: number; going: number; here: number } | null>(null);
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.from('ring_responders').select('status').eq('incident_id', incidentId);
       if (!data) return;
       setCounts({
         rung: data.length,
-        going: data.filter((r) => r.status === 'en_route' || r.status === 'on_scene').length,
+        going: data.filter((r) => r.status === 'en_route').length,
+        here: data.filter((r) => r.status === 'on_scene').length,
       });
     };
     load();
@@ -249,9 +255,13 @@ function NeighboursComing({ incidentId }: { incidentId: string }) {
     <Card>
       <Text style={styles.cardLabel}>HEREO NEARBY</Text>
       <Body>
-        {counts.going
-          ? `${counts.going} of ${counts.rung} people nearby ${counts.going === 1 ? 'is' : 'are'} on the way.`
-          : `${counts.rung} ${counts.rung === 1 ? 'person' : 'people'} nearby rung.`}
+        {[
+          counts.here ? `${counts.here} ${counts.here === 1 ? 'is' : 'are'} with you` : '',
+          counts.going ? `${counts.going} ${counts.going === 1 ? 'is' : 'are'} on the way` : '',
+        ]
+          .filter(Boolean)
+          .join(', ') || `${counts.rung} ${counts.rung === 1 ? 'person' : 'people'} nearby rung`}
+        {counts.here || counts.going ? ` (of ${counts.rung} people nearby rung).` : '.'}
       </Body>
     </Card>
   );
