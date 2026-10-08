@@ -8,7 +8,7 @@
     "scheme": "hereo",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/icon.png",
       "bundleIdentifier": "app.hereo",
       "supportsTablet": false,
       "infoPlist": {
@@ -53,7 +53,7 @@
         {
           "backgroundColor": "#0B0B0F",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 200
         }
       ],
       [
