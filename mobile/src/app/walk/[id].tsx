@@ -10,7 +10,7 @@ import { Body, Button, Card, Pill, Screen, Title } from '@/components/ui';
 import { call911, raiseAlert } from '@/lib/incidents';
 import { watchPosition } from '@/lib/location';
 import { useUserId } from '@/lib/session';
-import { friendlyError } from '@/lib/supabase';
+import { friendlyError, supabase } from '@/lib/supabase';
 import { colors, fonts, heroGradient, radius, space } from '@/lib/theme';
 import { arrivedLabel, followerArrivedTitle, followerTitle, TRIP_KINDS, tripTitle } from '@/lib/trips';
 import type { Walk } from '@/lib/types';
@@ -52,6 +52,7 @@ export default function WalkScreen() {
 function WalkerView({ walk, userId, now, reload }: { walk: Walk; userId: string; now: number; reload: () => void }) {
   const active = walk.status === 'active';
   const [busy, setBusy] = useState<string | null>(null);
+  const hasCircle = useHasCircle(userId);
 
   // Share position with the circle while the walk is on.
   useEffect(() => {
@@ -133,7 +134,11 @@ function WalkerView({ walk, userId, now, reload }: { walk: Walk; userId: string;
           </Text>
           <Body>
             {walk.status !== 'arrived'
-              ? 'Your circle is no longer following.'
+              ? hasCircle === false
+                ? 'The trip has ended.'
+                : 'Your circle is no longer following.'
+              : hasCircle === false
+                ? 'Glad you’re safe. Add someone to your circle so they hear when you arrive next time.'
               : walk.arrived_automatically
                 ? 'You reached your destination, so the trip ended and your circle knows you’re safe.'
                 : 'Your circle knows you arrived safely.'}
@@ -276,6 +281,19 @@ function BackButton() {
       <ArrowLeft color={colors.ink} />
     </Pressable>
   );
+}
+
+/** Whether anyone is in this person's circle; null while loading. */
+function useHasCircle(userId: string) {
+  const [has, setHas] = useState<boolean | null>(null);
+  useEffect(() => {
+    supabase
+      .from('circle_members')
+      .select('member_id', { count: 'exact', head: true })
+      .eq('owner_id', userId)
+      .then(({ count }) => setHas((count ?? 0) > 0));
+  }, [userId]);
+  return has;
 }
 
 /** Re-renders on an interval so countdowns stay current. */
