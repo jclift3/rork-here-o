@@ -298,7 +298,7 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
           <View style={{ flexDirection: 'row', gap: space.sm, flexWrap: 'wrap' }}>
             <Pill label={incident.urgency} color={incident.urgency === 'critical' ? colors.alert : colors.ink} filled />
             {incident.mode === 'her_o' && <Pill label="Her-O" color={colors.herO} filled />}
-            {me && <Pill label={me.kind === 'circle' ? 'Your circle' : 'Guardian'} color={colors.heroStart} />}
+            {me && <Pill label={me.kind === 'circle' ? 'Your circle' : 'Hero'} color={colors.heroStart} />}
           </View>
           <Title style={{ fontSize: 30 }}>{active ? `${requesterName} needs help` : 'This request is closed'}</Title>
           {active && incident.duress_at && (
@@ -366,13 +366,13 @@ function BriefCard({ bundle }: { bundle: IncidentBundle }) {
         <Sparkles size={16} color={urgent ? colors.alert : colors.heroStart} />
         <Text style={styles.cardLabel}>LIVE BRIEF</Text>
       </View>
-      <Text style={styles.brief} accessibilityLiveRegion="polite">{incident.brief ?? 'Alerting your circle and finding guardians nearby…'}</Text>
+      <Text style={styles.brief} accessibilityLiveRegion="polite">{incident.brief ?? 'Alerting your circle and finding heroes nearby…'}</Text>
     </Card>
   );
 }
 
 function ResponderRow({ responder }: { responder: Responder }) {
-  const name = responder.profiles?.display_name || (responder.kind === 'circle' ? 'Circle member' : 'Guardian');
+  const name = responder.profiles?.display_name || (responder.kind === 'circle' ? 'Circle member' : 'Hero');
   const color =
     responder.status === 'on_scene' ? colors.safe : responder.status === 'en_route' ? colors.heroStart : colors.muted;
   return (
@@ -380,7 +380,7 @@ function ResponderRow({ responder }: { responder: Responder }) {
       <Avatar name={name} size={40} color={responder.kind === 'guardian' ? colors.heroStart : colors.ink} />
       <View style={{ flex: 1 }}>
         <Text style={styles.responderName}>{name.split(' ')[0]}</Text>
-        <Body muted style={{ fontSize: 14 }}>{responder.kind === 'circle' ? 'Your circle' : 'Guardian'}</Body>
+        <Body muted style={{ fontSize: 14 }}>{responder.kind === 'circle' ? 'Your circle' : 'Hero'}</Body>
       </View>
       <Pill label={RESPONDER_STATUS_LABEL[responder.status]} color={color} filled={responder.status !== 'notified'} />
     </View>

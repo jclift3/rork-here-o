@@ -1,9 +1,11 @@
 import { router, useFocusEffect } from 'expo-router';
-import { ChevronRight, Footprints, PhoneIncoming, ShieldCheck } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ChevronRight, Footprints, PhoneIncoming } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { HoldToHelp } from '@/components/HoldToHelp';
+import { Mascot } from '@/components/Mascot';
 import { Body, Card, Pill, Screen, SectionLabel, Title } from '@/components/ui';
 import { alertSendFailed, raiseAlert } from '@/lib/incidents';
 import { getQuickPosition } from '@/lib/location';
@@ -11,7 +13,7 @@ import { useMode } from '@/lib/mode';
 import { describeRingDistance, loadActiveRings, useDuress, type ActiveRing } from '@/lib/ring';
 import { useSession, useUserId } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
-import { colors, fonts, radius, space } from '@/lib/theme';
+import { colors, fonts, heroGradient, radius, space } from '@/lib/theme';
 import type { HelpMode, Incident, Walk } from '@/lib/types';
 import { followerTitle, tripTitle } from '@/lib/trips';
 import { clockTime, describeDue, loadActiveWalks } from '@/lib/walks';
@@ -87,10 +89,17 @@ export default function Home() {
         <Title style={{ fontSize: 30 }}>Hi{profile?.display_name ? `, ${profile.display_name}` : ''}</Title>
         <ModeSwitch mode={mode} onChange={setMode} />
       </View>
-      <Body muted>
-        {nearby == null ? 'Checking who is nearby…' : `${nearby} ${nearby === 1 ? 'guardian' : 'guardians'} nearby`}
-        {` · ${circleCount} in your circle`}
-      </Body>
+      <View style={styles.status} accessible accessibilityRole="summary">
+        <Mascot size={56} radius={14} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={styles.statusTitle}>
+            {nearby == null ? 'Checking who’s nearby…' : `${nearby} ${nearby === 1 ? 'hero' : 'heroes'} nearby`}
+          </Text>
+          <Text style={styles.statusSub}>
+            {circleCount} in your circle{mode === 'her_o' ? ' · Her-O mode' : ''}
+          </Text>
+        </View>
+      </View>
 
       {active && !duress && (
         <Pressable onPress={() => router.push({ pathname: '/incident/[id]', params: { id: active } })}>
@@ -143,8 +152,8 @@ export default function Home() {
         <HoldToHelp size={220} onComplete={sendAlert} onTap={() => router.push('/help')} />
         <Body muted style={{ textAlign: 'center' }}>
           {mode === 'her_o'
-            ? 'Her-O mode: only verified women guardians are sent.'
-            : 'Hold for two seconds. Your circle and nearby guardians are alerted.'}
+            ? 'Her-O mode: only verified women heroes are sent.'
+            : 'Hold for two seconds. Your circle and nearby heroes are alerted.'}
         </Body>
       </View>
 
@@ -173,15 +182,19 @@ export default function Home() {
       {!profile?.is_guardian && (
         <>
           <SectionLabel>Answer the call</SectionLabel>
-          <Pressable onPress={() => router.push('/guardian')}>
-            <Card style={styles.row}>
-              <ShieldCheck color={colors.heroStart} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={styles.rowTitle}>Become a guardian</Text>
-                <Body muted>Be the person nearby who shows up.</Body>
-              </View>
-              <ChevronRight color={colors.ink} />
-            </Card>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Become a hero"
+            onPress={() => router.push('/guardian')}
+            style={({ pressed }) => [styles.invite, { opacity: pressed ? 0.85 : 1 }]}>
+            <View style={{ flex: 1, gap: space.sm }}>
+              <Text style={styles.inviteTitle}>Will you answer the call?</Text>
+              <Text style={styles.statusSub}>Be the person nearby who shows up.</Text>
+              <LinearGradient colors={heroGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.invitePill}>
+                <Text style={styles.invitePillText}>Become a hero</Text>
+              </LinearGradient>
+            </View>
+            <Mascot size={104} radius={18} />
           </Pressable>
         </>
       )}
@@ -236,6 +249,27 @@ function ModeSwitch({ mode, onChange }: { mode: HelpMode; onChange: (m: HelpMode
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
+  status: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    backgroundColor: colors.ink,
+    borderRadius: radius.card + 4,
+    padding: space.sm + 4,
+  },
+  statusTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.paper },
+  statusSub: { fontSize: 15, color: '#C9C9D1' },
+  invite: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    backgroundColor: colors.ink,
+    borderRadius: radius.card + 4,
+    padding: space.md,
+  },
+  inviteTitle: { fontFamily: fonts.display, fontSize: 22, lineHeight: 27, color: colors.paper },
+  invitePill: { alignSelf: 'flex-start', borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 8, marginTop: space.xs },
+  invitePillText: { fontWeight: '800', fontSize: 13, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.paper },
   holdWrap: { alignItems: 'center', gap: space.md, paddingVertical: space.lg },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   rowTitle: { fontFamily: fonts.displayMedium, fontSize: 17, color: colors.ink },

@@ -8,16 +8,16 @@ export const MAX_GUARDIANS = 3;
 const URGENCY_ORDER: Urgency[] = ["low", "elevated", "high", "critical"];
 
 export const TRIAGE_SYSTEM =
-  `You coordinate HereO, a community safety network. Someone has just asked for help. You decide how urgent it is and give each nearby volunteer guardian one short, concrete job.
+  `You coordinate HereO, a community safety network. Someone has just asked for help. You decide how urgent it is and give each nearby volunteer hero one short, concrete job.
 
-Guardians are trained neighbors, not police. Their jobs are to be present and visible, keep the person company (in person or on the phone), de-escalate, give basic first aid if trained, guide them to a safe public place, and call 911. Never ask a guardian to confront, chase, follow, restrain, or detain anyone.
+Heroes (the app's name for volunteer responders) are trained neighbors, not police. Their jobs are to be present and visible, keep the person company (in person or on the phone), de-escalate, give basic first aid if trained, guide them to a safe public place, and call 911. Never ask a hero to confront, chase, follow, restrain, or detain anyone.
 
 Rules:
 - If anything suggests a weapon, violence, a medical emergency, or a threat to life, set call_911_recommended to true and urgency to high or critical.
 - A silent alert with no note is serious until proven otherwise: urgency high.
 - summary is read by the person in trouble. Two or three calm, plain sentences: who is coming and what to do now. Mention 911 when call_911_recommended is true.
-- Give a role to each listed guardian you want to send (at most ${MAX_GUARDIANS}), closest first. Each role is one sentence, under 140 characters, and names a specific action. Use trained skills when they matter (for example first_aid for a medical issue).
-- In her_o mode the person asked for women guardians only; the list you are given already respects that.`;
+- Give a role to each listed hero you want to send (at most ${MAX_GUARDIANS}), closest first. Each role is one sentence, under 140 characters, and names a specific action. Use trained skills when they matter (for example first_aid for a medical issue).
+- In her_o mode the person asked for women heroes only; the list you are given already respects that.`;
 
 /** JSON schema for structured output. */
 export const TRIAGE_SCHEMA = {
@@ -83,7 +83,7 @@ function maxUrgency(a: Urgency, b: Urgency): Urgency {
 }
 
 export function firstName(displayName: string): string {
-  return displayName.trim().split(/\s+/)[0] || "A guardian";
+  return displayName.trim().split(/\s+/)[0] || "A hero";
 }
 
 /** Safe default jobs, assigned by distance rank. */
@@ -91,7 +91,7 @@ export function defaultRole(rank: number, requesterName: string): string {
   const who = firstName(requesterName);
   if (rank === 0) return `Go to ${who} and stay visible nearby. ${GUARDIAN_CONDUCT}`;
   if (rank === 1) return `Call ${who} now and stay on the line until someone arrives.`;
-  return `Head toward the area and wait for an update from the first guardian.`;
+  return `Head toward the area and wait for an update from the first hero.`;
 }
 
 export function fallbackTriage(

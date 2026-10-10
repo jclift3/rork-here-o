@@ -51,7 +51,7 @@ export default function Verify() {
       </Pressable>
       <Title>Her-O verification</Title>
       <Body muted>
-        In Her-O mode, a woman asking for help is only sent women guardians who have been verified. Verification is
+        In Her-O mode, a woman asking for help is only sent women heroes who have been verified. Verification is
         how we keep that promise.
       </Body>
 

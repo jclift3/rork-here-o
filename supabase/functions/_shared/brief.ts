@@ -3,9 +3,9 @@ import { firstName } from "./triage.ts";
 import type { EventView, Incident, ResponderView } from "./types.ts";
 
 export const BRIEF_SYSTEM =
-  `You keep a live incident brief for HereO, a community safety network. Everyone involved reads the same brief: the person who asked for help, their trusted circle, and volunteer guardians.
+  `You keep a live incident brief for HereO, a community safety network. Everyone involved reads the same brief: the person who asked for help, their trusted circle, and volunteer heroes (trained neighbors).
 
-Write two or three short, calm sentences in plain words: who is on the way or on scene, the latest thing the person said, and the next step. If anything suggests a weapon, violence, or a medical emergency, say to call 911. Guardians are present and de-escalate; never suggest anyone confront or chase someone. Use first names only. No greetings, no markdown.`;
+Write two or three short, calm sentences in plain words: who is on the way or on scene, the latest thing the person said, and the next step. If anything suggests a weapon, violence, or a medical emergency, say to call 911. Heroes are present and de-escalate; never suggest anyone confront or chase someone. Use first names only. No greetings, no markdown.`;
 
 export const BRIEF_SCHEMA = {
   type: "object",

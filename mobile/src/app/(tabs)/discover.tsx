@@ -49,13 +49,13 @@ export default function Discover() {
           ))}
         </ScrollView>
       ) : (
-        <Body muted>When guardians are thanked for showing up, they appear here.</Body>
+        <Body muted>When heroes are thanked for showing up, they appear here.</Body>
       )}
 
-      <SectionLabel>Your guardian path</SectionLabel>
+      <SectionLabel>Your hero path</SectionLabel>
       <Card style={{ gap: space.md }}>
         {profile?.is_guardian ? (
-          <Pill label="Guardian" color={colors.heroStart} filled />
+          <Pill label="Hero" color={colors.heroStart} filled />
         ) : (
           <Body>Start with the code of conduct. It takes two minutes.</Body>
         )}
@@ -82,7 +82,7 @@ export default function Discover() {
         HereO training partner. Each one changes the jobs HereO gives you.
       </Body>
       <Pressable onPress={() => router.push('/guardian')}>
-        <Body style={{ fontWeight: '700' }}>Guardian settings →</Body>
+        <Body style={{ fontWeight: '700' }}>Hero settings →</Body>
       </Pressable>
     </Screen>
   );

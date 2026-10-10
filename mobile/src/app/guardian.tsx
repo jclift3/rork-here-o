@@ -44,7 +44,7 @@ export default function Guardian() {
       </Pressable>
       <Title>Answer the call</Title>
       <Body>
-        Guardians are neighbors who show up. When someone nearby asks for help, HereO may send you with one clear job, like
+        Heroes are neighbors who show up. When someone nearby asks for help, HereO may send you with one clear job, like
         “walk to the corner and stay visible” or “call her and stay on the line.”
       </Body>
       <SectionLabel>Code of conduct</SectionLabel>
@@ -57,13 +57,13 @@ export default function Guardian() {
         ))}
       </Card>
       {profile?.is_guardian ? (
-        <Body>You’re a guardian. Turn availability on or off from your profile.</Body>
+        <Body>You’re a hero. Turn availability on or off from your profile.</Body>
       ) : (
-        <Button label="I agree. Make me a guardian" variant="hero" tall onPress={accept} loading={busy} />
+        <Button label="I agree. Make me a hero" variant="hero" tall onPress={accept} loading={busy} />
       )}
       {error && <Body style={{ color: colors.alert }}>{error}</Body>}
       <Body muted style={{ fontSize: 14 }}>
-        Guardians aren’t police or security and have no special authority. You can say no to any request.
+        Heroes aren’t police or security and have no special authority. You can say no to any request.
       </Body>
     </Screen>
   );

@@ -166,7 +166,7 @@ export async function dispatchGuardians(db: SupabaseClient, incidentId: string):
       incident_id: incidentId,
       kind: "triaged",
       body: `No answer yet, so ${
-        sent.count === 1 ? "a nearby guardian was" : `${sent.count} nearby guardians were`
+        sent.count === 1 ? "a nearby hero was" : `${sent.count} nearby heroes were`
       } asked to check.`,
     });
   }

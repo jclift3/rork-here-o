@@ -1,15 +1,17 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Check, Plus } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { IncidentMap } from '@/components/IncidentMap';
+import { Mascot } from '@/components/Mascot';
 import { Body, Button, Card, Pill, Screen, Title } from '@/components/ui';
 import { call911, raiseAlert } from '@/lib/incidents';
 import { watchPosition } from '@/lib/location';
 import { useUserId } from '@/lib/session';
 import { friendlyError } from '@/lib/supabase';
-import { colors, fonts } from '@/lib/theme';
+import { colors, fonts, heroGradient, radius, space } from '@/lib/theme';
 import { arrivedLabel, followerArrivedTitle, followerTitle, TRIP_KINDS, tripTitle } from '@/lib/trips';
 import type { Walk } from '@/lib/types';
 import {
@@ -120,6 +122,11 @@ function WalkerView({ walk, userId, now, reload }: { walk: Walk; userId: string;
     return (
       <Screen>
         <BackButton />
+        {walk.status === 'arrived' && (
+          <View style={styles.celebrate}>
+            <Mascot size={132} radius={24} />
+          </View>
+        )}
         <Card tone="safe">
           <Text style={styles.cardTitle}>
             {walk.status === 'arrived' ? arrivedLabel(walk) : `${TRIP_KINDS[walk.kind].label} cancelled`}
@@ -151,6 +158,7 @@ function WalkerView({ walk, userId, now, reload }: { walk: Walk; userId: string;
             : `Check in by ${clockTime(walk.due_at)}.`}
         </Body>
       </View>
+      <TripProgress walk={walk} now={now} late={late} />
 
       <IncidentMap lat={walk.lat} lng={walk.lng} label="You" />
 
@@ -233,6 +241,31 @@ function FollowerView({ walk, userId, now }: { walk: Walk; userId: string; now: 
   );
 }
 
+/** How much of the check-in window has passed, in the brand gradient (red once late). */
+function TripProgress({ walk, now, late }: { walk: Walk; now: number; late: boolean }) {
+  const start = new Date(walk.started_at).getTime();
+  const total = new Date(walk.due_at).getTime() - start;
+  const done = late ? 1 : total > 0 ? Math.min(1, Math.max(0, (now - start) / total)) : 0;
+  return (
+    <View
+      style={styles.track}
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: 100, now: Math.round(done * 100) }}>
+      {late ? (
+        <View style={[styles.fill, { width: '100%', backgroundColor: colors.alert }]} />
+      ) : (
+        <LinearGradient
+          colors={heroGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.fill, { width: `${Math.max(4, done * 100)}%` }]}
+        />
+      )}
+    </View>
+  );
+}
+
 function BackButton() {
   return (
     <Pressable
@@ -258,4 +291,7 @@ function useNow(everyMs: number) {
 const styles = StyleSheet.create({
   countdown: { fontFamily: fonts.display, fontSize: 44, color: colors.ink },
   cardTitle: { fontFamily: fonts.displayMedium, fontSize: 18, color: colors.ink },
+  track: { height: 10, borderRadius: radius.pill, backgroundColor: colors.mist, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: radius.pill },
+  celebrate: { alignItems: 'center', paddingVertical: space.sm },
 });

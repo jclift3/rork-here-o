@@ -67,7 +67,7 @@ export default function Onboarding() {
     <Screen>
       <Title>Welcome to HereO</Title>
       <Body>
-        HereO connects you with the people you trust and trained guardians nearby. Hold the help button and they know where
+        HereO connects you with the people you trust and trained heroes nearby. Hold the help button and they know where
         you are within seconds.
       </Body>
       <TextField
@@ -84,7 +84,7 @@ export default function Onboarding() {
       <Card>
         <Body>1. Hold the gradient button for two seconds, from any screen.</Body>
         <Body>2. Your circle gets your location right away.</Body>
-        <Body>3. Nearby guardians get a short, specific job from HereO’s AI coordinator.</Body>
+        <Body>3. Nearby heroes get a short, specific job from HereO’s AI coordinator.</Body>
         <Body>4. Everyone sees one live brief. Call 911 is always one tap away.</Body>
       </Card>
     </Screen>

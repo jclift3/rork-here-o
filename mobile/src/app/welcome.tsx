@@ -1,10 +1,10 @@
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Logo } from '@/components/Logo';
+import { Mascot } from '@/components/Mascot';
 import { Button } from '@/components/ui';
 import { colors, fonts, space } from '@/lib/theme';
 
@@ -16,13 +16,7 @@ export default function Welcome() {
         <Logo inverted size={30} />
       </View>
       <View style={styles.hero}>
-        <Image
-          source={require('../../assets/images/icon.png')}
-          style={styles.mascot}
-          accessible
-          accessibilityRole="image"
-          accessibilityLabel="HereO hero watching over the neighbourhood"
-        />
+        <Mascot size={240} radius={32} />
         <Text style={styles.headline}>Will you answer the call?</Text>
         <Text style={styles.sub}>Get help in seconds. Be the help nearby.</Text>
       </View>
@@ -38,7 +32,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ink, paddingHorizontal: space.lg },
   top: { alignItems: 'center', paddingTop: space.lg },
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.md },
-  mascot: { width: 240, height: 240, borderRadius: 32 },
   headline: { fontFamily: fonts.display, fontSize: 34, color: colors.paper, textAlign: 'center', marginTop: space.lg },
   sub: { fontSize: 17, color: '#C9C9D1', textAlign: 'center' },
   actions: { gap: space.sm, paddingBottom: space.md },

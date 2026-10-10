@@ -59,7 +59,7 @@ export interface IncidentEvent {
 }
 
 export const COURSES = [
-  { id: 'code_of_conduct', title: 'Guardian code of conduct', detail: 'Be present, de-escalate, never pursue. Required.', selfServe: true },
+  { id: 'code_of_conduct', title: 'Hero code of conduct', detail: 'Be present, de-escalate, never pursue. Required.', selfServe: true },
   { id: 'de_escalation', title: 'De-escalation', detail: 'Calm a tense moment with words and position.', selfServe: false },
   { id: 'bystander', title: 'Bystander intervention', detail: 'The 5 Ds: distract, delegate, document, delay, direct.', selfServe: false },
   { id: 'stop_the_bleed', title: 'Stop the Bleed', detail: 'Control serious bleeding until EMS arrives.', selfServe: false },

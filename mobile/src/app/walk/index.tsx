@@ -1,9 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Bike, Footprints, House, X } from 'lucide-react-native';
+import { Bike, ChevronRight, Footprints, House, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Body, Button, Screen, SectionLabel, TextField, Title } from '@/components/ui';
+import { Body, Button, Card, Screen, SectionLabel, TextField, Title } from '@/components/ui';
 import { useMode } from '@/lib/mode';
 import { useUserId } from '@/lib/session';
 import { friendlyError, supabase } from '@/lib/supabase';
@@ -28,6 +28,7 @@ export default function StartTrip() {
   const [minutes, setMinutes] = useState<number>(TRIP_KINDS[initialKind].minutes);
   const [destination, setDestination] = useState('');
   const [settings, setSettings] = useState<TripSettings | null>(null);
+  const [circleCount, setCircleCount] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const autoStarted = useRef(false);
@@ -69,6 +70,14 @@ export default function StartTrip() {
   };
 
   useEffect(() => {
+    supabase
+      .from('circle_members')
+      .select('member_id', { count: 'exact', head: true })
+      .eq('owner_id', userId)
+      .then(({ count }) => setCircleCount(count ?? 0));
+  }, [userId]);
+
+  useEffect(() => {
     loadTripSettings(userId).then((s) => {
       setSettings(s);
       if (s.home) setDestination((d) => d || 'Home');
@@ -98,10 +107,27 @@ export default function StartTrip() {
         Your circle follows along live from the start and hears when you arrive. If you don’t check in on time, HereO
         alerts them.
       </Body>
+      {circleCount === 0 && (
+        <Pressable accessibilityRole="button" onPress={() => router.push('/circle')}>
+          <Card tone="alert" style={styles.row}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={styles.rowTitle}>Nobody is in your circle yet</Text>
+              <Body muted>Add someone you trust so they can follow your trip.</Body>
+            </View>
+            <ChevronRight color={colors.ink} />
+          </Card>
+        </Pressable>
+      )}
 
       <View style={styles.chips} accessibilityRole="radiogroup">
         {(Object.keys(TRIP_KINDS) as TripKind[]).map((k) => (
-          <Chip key={k} label={TRIP_KINDS[k].label} on={k === kind} onPress={() => chooseKind(k)} />
+          <Chip
+            key={k}
+            label={TRIP_KINDS[k].label}
+            icon={kindIcon(k, k === kind)}
+            on={k === kind}
+            onPress={() => chooseKind(k)}
+          />
         ))}
       </View>
 
@@ -145,6 +171,11 @@ export default function StartTrip() {
   );
 }
 
+function kindIcon(k: TripKind, on: boolean) {
+  const Icon = KIND_ICONS[k];
+  return <Icon size={18} color={on ? colors.paper : colors.heroStart} />;
+}
+
 function Chip({ label, on, onPress, icon }: { label: string; on: boolean; onPress: () => void; icon?: React.ReactNode }) {
   return (
     <Pressable
@@ -173,5 +204,7 @@ const styles = StyleSheet.create({
     gap: space.xs,
   },
   chipOn: { backgroundColor: colors.ink },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  rowTitle: { fontFamily: fonts.displayMedium, fontSize: 17, color: colors.ink },
   chipText: { fontFamily: fonts.displayMedium, fontSize: 16, color: colors.ink },
 });

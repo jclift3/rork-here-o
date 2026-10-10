@@ -57,8 +57,8 @@ export function AlarmOverlay({
             <Text style={styles.big}>{counting ? `Ringing people nearby in ${flow.secondsLeft}` : 'HereO ring is on'}</Text>
             <Body style={styles.copy}>
               {counting
-                ? 'Your circle and guardians already know. Cancel now if you pressed by mistake.'
-                : 'Your circle, guardians and HereO users nearby have been alerted and can see where you are.'}
+                ? 'Your circle and heroes already know. Cancel now if you pressed by mistake.'
+                : 'Your circle, heroes and HereO users nearby have been alerted and can see where you are.'}
             </Body>
             {counting ? (
               <Button label="Cancel, I pressed by mistake" variant="outline" tall onPress={onCancelWindow} />

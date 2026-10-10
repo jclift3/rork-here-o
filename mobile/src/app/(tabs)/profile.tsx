@@ -69,7 +69,7 @@ export default function Profile() {
         <View style={{ gap: 4 }}>
           <Title style={{ fontSize: 28 }}>{profile?.display_name}</Title>
           <View style={{ flexDirection: 'row', gap: space.sm }}>
-            {profile?.is_guardian && <Pill label="Guardian" color={colors.heroStart} filled />}
+            {profile?.is_guardian && <Pill label="Hero" color={colors.heroStart} filled />}
             {profile?.her_o_verified && <Pill label="Her-O verified" color={colors.herO} filled />}
           </View>
         </View>
@@ -97,7 +97,7 @@ export default function Profile() {
       <SectionLabel>Your people</SectionLabel>
       <LinkRow title="Circle" detail="Who hears first when you need help" onPress={() => router.push('/circle')} />
       <LinkRow
-        title={profile?.is_guardian ? 'Guardian settings' : 'Become a guardian'}
+        title={profile?.is_guardian ? 'Hero settings' : 'Become a hero'}
         detail="Code of conduct and training"
         onPress={() => router.push('/guardian')}
       />
@@ -178,10 +178,10 @@ function TripsSettings({ userId }: { userId: string }) {
       </Card>
       <Card style={styles.row}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.rowTitle}>Also alert nearby guardians if I don’t respond</Text>
+          <Text style={styles.rowTitle}>Also alert nearby heroes if I don’t respond</Text>
           <Body muted>
             A missed check-in always alerts your circle. With this on, if you still haven’t answered 5 minutes later,
-            nearby guardians are asked to check on you too. They’re told it’s an unanswered check-in, not a confirmed
+            nearby heroes are asked to check on you too. They’re told it’s an unanswered check-in, not a confirmed
             emergency.
           </Body>
         </View>
@@ -334,8 +334,8 @@ function RingSettingsSection({ userId }: { userId: string }) {
         <Card tone="alert">
           <Body>
             {pins.limited
-              ? 'Your alerts reach your circle and guardians only, because people nearby reported false alarms. This lifts 30 days after the last one.'
-              : 'Someone nearby reported one of your alerts as a false alarm. Another in 30 days limits your alerts to your circle and guardians.'}
+              ? 'Your alerts reach your circle and heroes only, because people nearby reported false alarms. This lifts 30 days after the last one.'
+              : 'Someone nearby reported one of your alerts as a false alarm. Another in 30 days limits your alerts to your circle and heroes.'}
           </Body>
         </Card>
       )}
