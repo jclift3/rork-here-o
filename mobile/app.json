@@ -12,8 +12,8 @@
       "bundleIdentifier": "app.hereo",
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "HereO shares your location with the people helping you while a help request is open, and finds guardians near you.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "HereO uses your location in the background during a trip, so your circle can follow until you arrive, and while you're available as a guardian, so it can send you to someone nearby. Nobody else sees where you are.",
+        "NSLocationWhenInUseUsageDescription": "HereO shares your location with the people helping you while a help request is open, and finds heroes near you.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "HereO uses your location in the background during a trip, so your circle can follow until you arrive, and while you're available as a hero, so it can send you to someone nearby. Nobody else sees where you are.",
         "UIBackgroundModes": [
           "location",
           "remote-notification",
@@ -59,8 +59,8 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "HereO shares your location with the people helping you while a help request is open, and finds guardians near you.",
-          "locationAlwaysAndWhenInUsePermission": "HereO uses your location in the background during a trip, so your circle can follow until you arrive, and while you're available as a guardian, so it can send you to someone nearby. Nobody else sees where you are.",
+          "locationWhenInUsePermission": "HereO shares your location with the people helping you while a help request is open, and finds heroes near you.",
+          "locationAlwaysAndWhenInUsePermission": "HereO uses your location in the background during a trip, so your circle can follow until you arrive, and while you're available as a hero, so it can send you to someone nearby. Nobody else sees where you are.",
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
