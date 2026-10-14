@@ -15,6 +15,8 @@ type Step = 'sign-in' | 'create' | 'code';
 /** Email and password. New accounts confirm their email with a 6-digit code. */
 export default function SignIn() {
   const [step, setStep] = useState<Step>('sign-in');
+  // Where Back on the code screen returns to: the form the person came from.
+  const [codeFrom, setCodeFrom] = useState<Step>('create');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -43,6 +45,7 @@ export default function SignIn() {
 
   const askForCode = () => {
     setCode('');
+    setCodeFrom(step);
     setStep('code');
   };
 
@@ -90,7 +93,7 @@ export default function SignIn() {
   if (step === 'code') {
     return (
       <Screen>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => setStep('create')} hitSlop={16}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => setStep(codeFrom)} hitSlop={16}>
           <ArrowLeft color={colors.ink} />
         </Pressable>
         <Title>Check your email</Title>
