@@ -3,9 +3,15 @@
 project_id = "hereo"
 
 [auth.email]
-# The app signs in with email + password; the sign-up function confirms accounts.
+# Email + password. New accounts confirm their address with a 6-digit code,
+# sent through Resend SMTP (sender team@hereo.app) on the hosted project.
 enable_signup = true
+enable_confirmations = true
 otp_length = 6
+
+[auth.email.template.confirmation]
+subject = "Your HereO code"
+content_path = "./supabase/templates/confirm-signup.html"
 
 [functions.dispatch]
 verify_jwt = true
@@ -24,7 +30,7 @@ import_map = "./functions/deno.json"
 verify_jwt = false
 import_map = "./functions/deno.json"
 
-# Called before the person has an account, so there's no user token yet.
+# Retired: answers 410 so older builds can't skip email verification.
 [functions.sign-up]
 verify_jwt = false
 import_map = "./functions/deno.json"

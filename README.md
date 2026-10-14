@@ -52,7 +52,13 @@ Point the check-in scheduler at the project once, in the SQL editor (the migrati
 select vault.create_secret('https://<your-project-ref>.supabase.co', 'hereo_project_url');
 ```
 
-The app signs in with email and password. The `sign-up` function creates accounts already confirmed, because the hosted project can't send custom emails without its own SMTP. Email addresses are not verified yet; add a custom SMTP sender and switch back to email codes before launch.
+The app signs in with email and password. New accounts confirm their email with a 6-digit code (`supabase.auth.verifyOtp`, type `signup`). On the hosted project this needs:
+
+- Custom SMTP through Resend (sender domain hereo.app, set up with Resend's Supabase integration).
+- Auth › Email: "Confirm email" on.
+- The "Confirm signup" template set to `supabase/templates/confirm-signup.html`, subject "Your HereO code". It must show `{{ .Token }}`, not a link.
+
+The old `sign-up` function, which created accounts already confirmed, now answers 410.
 
 ### App
 
