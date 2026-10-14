@@ -104,6 +104,29 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "ExpoWidgetsTarget",
+                  "bundleIdentifier": "app.hereo.widgets",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.app.hereo"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "02bef9ac-4d9d-4d0f-9d57-22144893d058"
+      }
+    },
+    "owner": "jclift3"
   }
 }
