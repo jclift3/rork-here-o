@@ -18,7 +18,8 @@
           "location",
           "remote-notification",
           "audio"
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
         "com.apple.developer.usernotifications.time-sensitive": true
