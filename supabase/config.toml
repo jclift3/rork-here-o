@@ -13,6 +13,10 @@ otp_length = 6
 subject = "Your HereO code"
 content_path = "./supabase/templates/confirm-signup.html"
 
+[auth.email.template.recovery]
+subject = "Your HereO password reset code"
+content_path = "./supabase/templates/reset-password.html"
+
 [functions.dispatch]
 verify_jwt = true
 import_map = "./functions/deno.json"

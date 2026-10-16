@@ -57,6 +57,7 @@ The app signs in with email and password. New accounts confirm their email with 
 - Custom SMTP through Resend (sender domain hereo.app, set up with Resend's Supabase integration).
 - Auth › Email: "Confirm email" on.
 - The "Confirm signup" template set to `supabase/templates/confirm-signup.html`, subject "Your HereO code". It must show `{{ .Token }}`, not a link.
+- The "Reset password" template set to `supabase/templates/reset-password.html`, subject "Your HereO password reset code". It must also show `{{ .Token }}`: the app's "Forgot password?" asks for the code.
 
 The old `sign-up` function, which created accounts already confirmed, now answers 410.
 

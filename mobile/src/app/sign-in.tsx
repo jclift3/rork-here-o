@@ -10,13 +10,19 @@ import { colors } from '@/lib/theme';
 const MIN_PASSWORD = 8;
 const CODE_LENGTH = 6;
 
-type Step = 'sign-in' | 'create' | 'code';
+type Step = 'sign-in' | 'create' | 'forgot' | 'code' | 'new-password';
+// What the emailed code is for: confirming a new account, or resetting a password.
+type CodeFor = 'signup' | 'recovery';
 
-/** Email and password. New accounts confirm their email with a 6-digit code. */
+/**
+ * Email and password. New accounts confirm their email with a 6-digit code,
+ * and a forgotten password is reset with one.
+ */
 export default function SignIn() {
   const [step, setStep] = useState<Step>('sign-in');
   // Where Back on the code screen returns to: the form the person came from.
   const [codeFrom, setCodeFrom] = useState<Step>('create');
+  const [codeFor, setCodeFor] = useState<CodeFor>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -28,7 +34,13 @@ export default function SignIn() {
   const address = email.trim().toLowerCase();
   const validEmail = /^\S+@\S+\.\S+$/.test(address);
   const ready =
-    step === 'code' ? code.length === CODE_LENGTH : validEmail && password.length >= (creating ? MIN_PASSWORD : 1);
+    step === 'code'
+      ? code.length === CODE_LENGTH
+      : step === 'forgot'
+        ? validEmail
+        : step === 'new-password'
+          ? password.length >= MIN_PASSWORD
+          : validEmail && password.length >= (creating ? MIN_PASSWORD : 1);
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -43,8 +55,9 @@ export default function SignIn() {
     }
   };
 
-  const askForCode = () => {
+  const askForCode = (purpose: CodeFor = 'signup') => {
     setCode('');
+    setCodeFor(purpose);
     setCodeFrom(step);
     setStep('code');
   };
@@ -73,22 +86,99 @@ export default function SignIn() {
       askForCode();
     });
 
+  const sendResetCode = () =>
+    supabase.auth.resetPasswordForEmail(address).then(({ error }) => {
+      if (error) throw error;
+    });
+
+  const forgot = () =>
+    run(async () => {
+      await sendResetCode();
+      askForCode('recovery');
+    });
+
   const confirm = () =>
     run(async () => {
-      const { error } = await supabase.auth.verifyOtp({ email: address, token: code, type: 'signup' });
+      const { error } = await supabase.auth.verifyOtp({ email: address, token: code, type: codeFor });
       if (error) {
         setError(/expired|invalid/i.test(error.message) ? 'That code didn’t work. Check it or send a new one.' : friendlyError(error));
+        return;
+      }
+      if (codeFor === 'signup') return void router.replace('/');
+      // The code signed them in; now they choose the new password.
+      setPassword('');
+      setStep('new-password');
+    });
+
+  const resend = () =>
+    run(async () => {
+      if (codeFor === 'recovery') await sendResetCode();
+      else {
+        const { error } = await supabase.auth.resend({ type: 'signup', email: address });
+        if (error) return setError(friendlyError(error));
+      }
+      setNotice(`We sent a new code to ${address}.`);
+    });
+
+  const savePassword = () =>
+    run(async () => {
+      if (password.length > 72) return setError('Use a password of 72 characters or fewer.');
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) {
+        setError(/different from the old/i.test(error.message) ? 'Choose a password you haven’t used here before.' : friendlyError(error));
         return;
       }
       router.replace('/');
     });
 
-  const resend = () =>
-    run(async () => {
-      const { error } = await supabase.auth.resend({ type: 'signup', email: address });
-      if (error) return setError(friendlyError(error));
-      setNotice(`We sent a new code to ${address}.`);
-    });
+  const errorText = error && <Body style={{ color: colors.alert }}>{error}</Body>;
+
+  if (step === 'new-password') {
+    return (
+      <Screen>
+        <Title>Choose a new password</Title>
+        <Body muted>You’ll use it to sign in to {address} from now on.</Body>
+        <TextField
+          label="New password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          autoComplete="new-password"
+          textContentType="newPassword"
+          placeholder={`At least ${MIN_PASSWORD} characters`}
+          onSubmitEditing={() => ready && savePassword()}
+        />
+        <Button label="Save password" onPress={savePassword} loading={busy} disabled={!ready} />
+        {errorText}
+      </Screen>
+    );
+  }
+
+  if (step === 'forgot') {
+    return (
+      <Screen>
+        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => setStep('sign-in')} hitSlop={16}>
+          <ArrowLeft color={colors.ink} />
+        </Pressable>
+        <Title>Reset your password</Title>
+        <Body muted>We’ll email you a {CODE_LENGTH}-digit code to set a new one.</Body>
+        <TextField
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          textContentType="emailAddress"
+          placeholder="you@example.com"
+          onSubmitEditing={() => ready && forgot()}
+        />
+        <Button label="Email me a code" onPress={forgot} loading={busy} disabled={!ready} />
+        {errorText}
+      </Screen>
+    );
+  }
 
   if (step === 'code') {
     return (
@@ -109,10 +199,10 @@ export default function SignIn() {
           maxLength={CODE_LENGTH}
           onSubmitEditing={() => ready && confirm()}
         />
-        <Button label="Confirm email" onPress={confirm} loading={busy} disabled={!ready} />
+        <Button label={codeFor === 'signup' ? 'Confirm email' : 'Continue'} onPress={confirm} loading={busy} disabled={!ready} />
         <Button label="Send a new code" variant="ghost" onPress={resend} disabled={busy} />
         {notice && <Body muted>{notice}</Body>}
-        {error && <Body style={{ color: colors.alert }}>{error}</Body>}
+        {errorText}
       </Screen>
     );
   }
@@ -161,7 +251,17 @@ export default function SignIn() {
           setError(null);
         }}
       />
-      {error && <Body style={{ color: colors.alert }}>{error}</Body>}
+      {!creating && (
+        <Button
+          label="Forgot password?"
+          variant="ghost"
+          onPress={() => {
+            setStep('forgot');
+            setError(null);
+          }}
+        />
+      )}
+      {errorText}
     </Screen>
   );
 }
