@@ -168,10 +168,17 @@ Deno.test("push messages dedupe and drop invalid tokens", async () => {
   let calls = 0;
   const fakeFetch = (() => {
     calls++;
-    return Promise.resolve(new Response("{}", { status: 200 }));
+    return Promise.resolve(new Response(JSON.stringify({ data: [{ status: "ok", id: "x" }] }), { status: 200 }));
   }) as typeof fetch;
   assertEquals(await sendPush(msgs, fakeFetch), 1);
   assertEquals(calls, 1);
+  const rejected = (() =>
+    Promise.resolve(
+      new Response(JSON.stringify({ data: [{ status: "error", message: "not registered", details: { error: "DeviceNotRegistered" } }] }), {
+        status: 200,
+      }),
+    )) as typeof fetch;
+  assertEquals(await sendPush(msgs, rejected), 0);
   const failing = (() => Promise.reject(new Error("offline"))) as typeof fetch;
   assertEquals(await sendPush(msgs, failing), 0);
 });

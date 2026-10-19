@@ -41,6 +41,30 @@ export function buildPushMessages(
   }));
 }
 
+interface PushTicket {
+  status: "ok" | "error";
+  message?: string;
+  details?: { error?: string };
+}
+
+/**
+ * Expo answers 200 even when it rejects single messages (a stale token, a bad
+ * credential), with one ticket per message. Counts the accepted ones and logs the rest.
+ */
+function countAccepted(chunk: PushMessage[], body: { data?: PushTicket[] } | null): number {
+  const tickets = body?.data;
+  if (!Array.isArray(tickets)) {
+    console.error("push sent but no tickets came back", JSON.stringify(body));
+    return chunk.length;
+  }
+  let accepted = 0;
+  tickets.forEach((ticket, i) => {
+    if (ticket.status === "ok") accepted++;
+    else console.error("push rejected", ticket.details?.error ?? "", ticket.message ?? "", chunk[i]?.to.slice(-8) ?? "");
+  });
+  return accepted;
+}
+
 /** Sends in chunks of 100 (Expo's limit). Failures are logged, never thrown: a push outage must not stop dispatch. */
 export async function sendPush(messages: PushMessage[], fetchImpl: typeof fetch = fetch): Promise<number> {
   let sent = 0;
@@ -52,8 +76,11 @@ export async function sendPush(messages: PushMessage[], fetchImpl: typeof fetch 
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(chunk),
       });
-      if (res.ok) sent += chunk.length;
-      else console.error("push failed", res.status, await res.text());
+      if (!res.ok) {
+        console.error("push failed", res.status, await res.text());
+        continue;
+      }
+      sent += countAccepted(chunk, await res.json().catch(() => null));
     } catch (err) {
       console.error("push error", err);
     }
