@@ -60,7 +60,12 @@ function countAccepted(chunk: PushMessage[], body: { data?: PushTicket[] } | nul
   let accepted = 0;
   tickets.forEach((ticket, i) => {
     if (ticket.status === "ok") accepted++;
-    else console.error("push rejected", ticket.details?.error ?? "", ticket.message ?? "", chunk[i]?.to.slice(-8) ?? "");
+    else {console.error(
+        "push rejected",
+        ticket.details?.error ?? "",
+        ticket.message ?? "",
+        chunk[i]?.to.slice(-8) ?? "",
+      );}
   });
   return accepted;
 }

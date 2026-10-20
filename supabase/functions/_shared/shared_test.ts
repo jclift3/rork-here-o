@@ -174,9 +174,14 @@ Deno.test("push messages dedupe and drop invalid tokens", async () => {
   assertEquals(calls, 1);
   const rejected = (() =>
     Promise.resolve(
-      new Response(JSON.stringify({ data: [{ status: "error", message: "not registered", details: { error: "DeviceNotRegistered" } }] }), {
-        status: 200,
-      }),
+      new Response(
+        JSON.stringify({
+          data: [{ status: "error", message: "not registered", details: { error: "DeviceNotRegistered" } }],
+        }),
+        {
+          status: 200,
+        },
+      ),
     )) as typeof fetch;
   assertEquals(await sendPush(msgs, rejected), 0);
   const failing = (() => Promise.reject(new Error("offline"))) as typeof fetch;
