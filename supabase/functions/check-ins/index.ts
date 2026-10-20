@@ -4,13 +4,14 @@
 // * Every minute (pg_cron, body {}): turns trips whose check-in is overdue
 //   into help requests for the circle, tells the traveller, and sends nearby
 //   guardians to missed check-ins that are still unanswered after the grace
-//   period, for people who opted in.
+//   period, for people who opted in. Then saves Expo's delivery receipts for
+//   recent pushes.
 // * When a trip starts or arrives (trip_event trigger, body {event, walk_id}):
 //   tells the traveller's circle.
 
 import { dispatchGuardians, dispatchIncident } from "../_shared/dispatch.ts";
 import { adminClient, json } from "../_shared/http.ts";
-import { buildPushMessages, sendPush } from "../_shared/push.ts";
+import { buildPushMessages, checkPushReceipts, sendPush } from "../_shared/push.ts";
 import { firstName } from "../_shared/triage.ts";
 import { isServiceRequest, tripArrivedMessage, type TripForMessage, tripStartedMessage } from "../_shared/walks.ts";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -47,6 +48,7 @@ Deno.serve(async (req) => {
           "We've let your circle know. If you're OK, open HereO and tap I'm safe.",
           { incident_id: row.incident_id, url: `hereo://incident/${row.incident_id}` },
         ),
+        db,
       );
       return { walk_id: row.walk_id, incident_id: row.incident_id, ...result };
     } catch (err) {
@@ -69,7 +71,9 @@ Deno.serve(async (req) => {
     }),
   );
 
-  return json({ escalated: results.length, results, guardian_alerts: guardianAlerts });
+  const receipts = await checkPushReceipts(db);
+
+  return json({ escalated: results.length, results, guardian_alerts: guardianAlerts, receipts });
 });
 
 async function notifyCircle(db: SupabaseClient, walkId: string, event: "started" | "arrived") {
@@ -97,6 +101,7 @@ async function notifyCircle(db: SupabaseClient, walkId: string, event: "started"
   );
   await sendPush(
     buildPushMessages(tokens, message.title, message.body, { walk_id: walkId, url: `hereo://walk/${walkId}` }),
+    db,
   );
   return { status: "sent", event, circle: tokens.filter(Boolean).length };
 }

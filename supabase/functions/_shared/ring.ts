@@ -125,7 +125,7 @@ export async function sendRing(db: SupabaseClient, incidentId: string, requester
     const link = { ring_id: incidentId, url: `hereo://ring/${incidentId}` };
     await Promise.all(rung.map((c) => {
       const m = ringMessage(c);
-      return sendPush(buildPushMessages([c.push_token], m.title, m.body, link, RING_PUSH));
+      return sendPush(buildPushMessages([c.push_token], m.title, m.body, link, RING_PUSH), db);
     }));
   }
   await db.from("incident_events").insert({
@@ -166,6 +166,7 @@ export async function ringEnded(
     const m = duressMessage(requester?.display_name || "Someone");
     const notified = await sendPush(
       buildPushMessages(tokens, m.title, m.body, { incident_id: incidentId, url: `hereo://incident/${incidentId}` }),
+      db,
     );
     return { status: "duress", notified };
   }
@@ -187,6 +188,7 @@ export async function ringEnded(
   );
   const notified = await sendPush(
     buildPushMessages(tokens, ALL_CLEAR.title, ALL_CLEAR.body, { ring_id: incidentId }, { channelId: "hereo-ring" }),
+    db,
   );
   return { status: "all_clear", notified };
 }

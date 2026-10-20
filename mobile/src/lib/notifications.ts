@@ -63,18 +63,25 @@ export async function registerForPush(userId: string): Promise<void> {
   }
 }
 
-/** Opens the ring, incident or walk a tapped notification points to, including the one that launched the app. */
+/** Opens the ring, incident or walk a notification points to. Returns false if it points nowhere. */
+export function openNotificationTarget(data: Record<string, unknown> | null | undefined): boolean {
+  if (typeof data?.ring_id === 'string') {
+    router.push({ pathname: '/ring/[id]', params: { id: data.ring_id } });
+  } else if (typeof data?.incident_id === 'string') {
+    router.push({ pathname: '/incident/[id]', params: { id: data.incident_id } });
+  } else if (typeof data?.walk_id === 'string') {
+    router.push({ pathname: '/walk/[id]', params: { id: data.walk_id } });
+  } else {
+    return false;
+  }
+  return true;
+}
+
+/** Opens what a tapped notification points to, including the one that launched the app. */
 export function routeNotificationTaps(): () => void {
   if (Platform.OS === 'web') return () => {};
   const open = (response: Notifications.NotificationResponse | null) => {
-    const data = response?.notification.request.content.data;
-    if (typeof data?.ring_id === 'string') {
-      router.push({ pathname: '/ring/[id]', params: { id: data.ring_id } });
-    } else if (typeof data?.incident_id === 'string') {
-      router.push({ pathname: '/incident/[id]', params: { id: data.incident_id } });
-    } else if (typeof data?.walk_id === 'string') {
-      router.push({ pathname: '/walk/[id]', params: { id: data.walk_id } });
-    }
+    openNotificationTarget(response?.notification.request.content.data);
   };
   open(Notifications.getLastNotificationResponse());
   const sub = Notifications.addNotificationResponseReceivedListener(open);
