@@ -1,0 +1,40 @@
+# Minimal Supabase CLI config. `supabase link --project-ref <ref>` connects it
+# to a hosted project; see README.md for the full setup.
+project_id = "hereo"
+
+[auth.email]
+# Email + password. New accounts confirm their address with a 6-digit code,
+# sent through Resend SMTP (sender team@hereo.app) on the hosted project.
+enable_signup = true
+enable_confirmations = true
+otp_length = 6
+
+[auth.email.template.confirmation]
+subject = "Your HereO code"
+content_path = "./supabase/templates/confirm-signup.html"
+
+[auth.email.template.recovery]
+subject = "Your HereO password reset code"
+content_path = "./supabase/templates/reset-password.html"
+
+[functions.dispatch]
+verify_jwt = true
+import_map = "./functions/deno.json"
+
+[functions.ring]
+verify_jwt = true
+import_map = "./functions/deno.json"
+
+[functions.brief]
+verify_jwt = true
+import_map = "./functions/deno.json"
+
+# Called every minute by pg_cron with a Vault secret, not by the app.
+[functions.check-ins]
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+# Retired: answers 410 so older builds can't skip email verification.
+[functions.sign-up]
+verify_jwt = false
+import_map = "./functions/deno.json"
