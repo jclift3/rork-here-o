@@ -168,24 +168,23 @@ Deno.test("push messages dedupe and drop invalid tokens", async () => {
   let calls = 0;
   const fakeFetch = (() => {
     calls++;
-    return Promise.resolve(new Response(JSON.stringify({ data: [{ status: "ok", id: "x" }] }), { status: 200 }));
+    return Promise.resolve(new Response(JSON.stringify({ data: [{ status: "ok", id: "t1" }] }), { status: 200 }));
   }) as typeof fetch;
-  assertEquals(await sendPush(msgs, fakeFetch), 1);
+  assertEquals(await sendPush(msgs, null, fakeFetch), 1);
   assertEquals(calls, 1);
-  const rejected = (() =>
+  const failing = (() => Promise.reject(new Error("offline"))) as typeof fetch;
+  assertEquals(await sendPush(msgs, null, failing), 0);
+  // Expo answers 200 even when it rejects a message; only ok tickets count.
+  const rejecting = (() =>
     Promise.resolve(
       new Response(
         JSON.stringify({
           data: [{ status: "error", message: "not registered", details: { error: "DeviceNotRegistered" } }],
         }),
-        {
-          status: 200,
-        },
+        { status: 200 },
       ),
     )) as typeof fetch;
-  assertEquals(await sendPush(msgs, rejected), 0);
-  const failing = (() => Promise.reject(new Error("offline"))) as typeof fetch;
-  assertEquals(await sendPush(msgs, failing), 0);
+  assertEquals(await sendPush(msgs, null, rejecting), 0);
 });
 
 Deno.test("check-ins only accepts the scheduler secret", async () => {

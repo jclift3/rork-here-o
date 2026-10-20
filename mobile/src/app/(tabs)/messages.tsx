@@ -1,4 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
+import { Bell, ChevronRight } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -25,6 +26,7 @@ export default function Messages() {
   const userId = useUserId();
   const [thanks, setThanks] = useState<Thanks[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [latest, setLatest] = useState<{ title: string; created_at: string } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -42,12 +44,30 @@ export default function Messages() {
         .order('created_at', { ascending: false })
         .limit(50)
         .then(({ data }) => setIncidents((data ?? []) as Incident[]));
+      supabase
+        .from('notifications')
+        .select('title, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data }) => setLatest(data));
     }, [userId]),
   );
 
   return (
     <Screen>
       <Title>Messages</Title>
+      <Pressable style={styles.row} accessibilityRole="button" onPress={() => router.push('/notifications')}>
+        <Bell color={colors.ink} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.name}>Notifications</Text>
+          <Body muted numberOfLines={1}>
+            {latest ? `${latest.title} · ${shortDate(latest.created_at)}` : 'Everything HereO has sent you'}
+          </Body>
+        </View>
+        <ChevronRight color={colors.muted} />
+      </Pressable>
       {thanks.length > 0 && <SectionLabel>Thank-yous</SectionLabel>}
       {thanks.map((t) => (
         <Pressable key={t.id} style={styles.row} onPress={() => router.push({ pathname: '/incident/[id]', params: { id: t.incident_id } })}>

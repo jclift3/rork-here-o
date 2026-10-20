@@ -52,6 +52,7 @@ function RootStack() {
         <Stack.Screen name="welcome" options={{ contentStyle: { backgroundColor: colors.ink } }} />
         <Stack.Screen name="incident/[id]" options={{ gestureEnabled: false }} />
         <Stack.Screen name="circle" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="notifications" options={{ presentation: 'modal' }} />
         <Stack.Screen name="guardian" options={{ presentation: 'modal' }} />
         <Stack.Screen name="verify" options={{ presentation: 'modal' }} />
         <Stack.Screen name="walk/index" options={{ presentation: 'modal' }} />

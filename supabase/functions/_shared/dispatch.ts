@@ -102,6 +102,7 @@ export async function dispatchIncident(
           : "They pressed their HereO help button. Tap to see where they are.",
         deepLink,
       ),
+      db,
     );
   }
 
@@ -234,6 +235,7 @@ async function sendGuardians(
           missed ? `Not a confirmed emergency: someone nearby hasn't checked in. ${g.role}` : g.role,
           deepLink,
         ),
+        db,
       )
     ));
   }
