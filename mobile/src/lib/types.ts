@@ -35,6 +35,10 @@ export interface Incident {
   duress_at: string | null;
   created_at: string;
   resolved_at: string | null;
+  /** Latest privacy-blurred scene photo in the 'scenes' bucket (Muse Dispatcher). */
+  scene_path?: string | null;
+  /** Which model coordinated this incident, or 'rules-only'. */
+  agent_model?: string | null;
 }
 
 export interface Responder {
@@ -52,7 +56,19 @@ export interface IncidentEvent {
   id: number;
   incident_id: string;
   actor_id: string | null;
-  kind: 'created' | 'triaged' | 'brief' | 'message' | 'status' | 'escalated_911' | 'resolved' | 'cancelled';
+  kind:
+    | 'created'
+    | 'triaged'
+    | 'brief'
+    | 'message'
+    | 'status'
+    | 'escalated_911'
+    | 'resolved'
+    | 'cancelled'
+    // Muse Dispatcher (Meta hackathon): transcripts, blurred scene photos, coordinator notes.
+    | 'voice'
+    | 'scene'
+    | 'agent';
   body: string | null;
   created_at: string;
   profiles: { display_name: string } | null;

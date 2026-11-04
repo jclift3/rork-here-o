@@ -5,6 +5,8 @@ import { Alert, KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IncidentMap } from '@/components/IncidentMap';
+import { MuseCoordinator } from '@/components/MuseCoordinator';
+import { SceneCard, TalkToHereO } from '@/components/MuseReport';
 import { AlarmOverlay, PinSheet } from '@/components/RingAlarm';
 import { Avatar, Body, Button, Card, Pill, Screen, SectionLabel, Title } from '@/components/ui';
 import {
@@ -18,13 +20,14 @@ import {
   type IncidentBundle,
 } from '@/lib/incidents';
 import { watchPosition } from '@/lib/location';
+import { emergencyNumber } from '@/lib/muse';
 import { disarmRing, endHelpRequest, loadPinStatus, notifyRingEnded, useDuress, useRingFlow, type PinStatus } from '@/lib/ring';
 import { useUserId } from '@/lib/session';
 import { friendlyError, supabase } from '@/lib/supabase';
 import { colors, fonts, space } from '@/lib/theme';
 import type { Responder } from '@/lib/types';
 
-const CONDUCT = "Be present. Don't pursue. Call 911 for danger.";
+const conduct = (n: string) => `Be present. Don't pursue. Call ${n} for danger.`;
 
 /**
  * One live screen for everyone in an incident. The person who asked sees who
@@ -83,6 +86,7 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
   const [hiddenAt, setHiddenAt] = useState(0);
   const justHidden = () => Date.now() - hiddenAt < 700;
   const active = incident.status === 'active';
+  const num = emergencyNumber(incident.lat, incident.lng);
 
   useEffect(() => {
     loadPinStatus().then(setPinStatus);
@@ -162,7 +166,7 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       {active && flow.incidentId === incident.id && (
         <AlarmOverlay
-          onCall911={() => call911(incident.id, userId, true)}
+          onCall911={() => call911(incident.id, userId, true, num)}
           onImOk={() => ask('resolved')}
           onCancelWindow={cancelWindow}
           onHide={() => setHiddenAt(Date.now())}
@@ -179,6 +183,8 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
           <BackButton />
           <Title style={{ color: active ? colors.alert : colors.safe }}>{headline}</Title>
           <BriefCard bundle={bundle} />
+          {active && <TalkToHereO incidentId={incident.id} />}
+          <MuseCoordinator incidentId={incident.id} responders={responders} />
           <IncidentMap lat={incident.lat} lng={incident.lng} label="You" />
           {active && <NeighboursComing incidentId={incident.id} />}
           <SectionLabel>{responders.length ? 'Who knows' : 'Finding people nearby'}</SectionLabel>
@@ -194,12 +200,12 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
             <MessageBox incidentId={incident.id} userId={userId} />
             <View style={styles.dockButtons}>
               <Button
-                label="Call 911"
+                label={`Call ${num}`}
                 variant="alert"
                 tall
                 style={{ flex: 1 }}
                 icon={<Phone color={colors.paper} size={20} />}
-                onPress={() => !justHidden() && call911(incident.id, userId, true)}
+                onPress={() => !justHidden() && call911(incident.id, userId, true, num)}
               />
               <Button label="I'm safe" variant="safe" tall style={{ flex: 1 }} onPress={() => ask('resolved')} />
             </View>
@@ -273,6 +279,7 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
   const active = incident.status === 'active';
   const requesterName = events.find((e) => e.kind === 'created')?.profiles?.display_name?.split(' ')[0] ?? 'They';
   const [busy, setBusy] = useState(false);
+  const num = emergencyNumber(incident.lat, incident.lng);
 
   const setStatus = async (status: Responder['status']) => {
     setBusy(true);
@@ -306,7 +313,7 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
               <Text style={[styles.cardLabel, { color: colors.alert }]}>DURESS PIN USED</Text>
               <Body>
                 {requesterName} ended the alert with their duress PIN. Their phone shows all clear, but they may not be
-                safe. Call 911 and don&apos;t tell them you know.
+                safe. Call {num} and don&apos;t tell them you know.
               </Body>
             </Card>
           )}
@@ -314,10 +321,12 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
             <Card style={{ borderWidth: 2, borderColor: colors.heroStart, backgroundColor: colors.paper }}>
               <Text style={styles.cardLabel}>YOUR JOB</Text>
               <Text style={styles.role}>{me.role}</Text>
-              <Body muted>{CONDUCT}</Body>
+              <Body muted>{conduct(num)}</Body>
             </Card>
           )}
           <BriefCard bundle={bundle} />
+          <SceneCard path={incident.scene_path ?? null} events={events} />
+          <MuseCoordinator incidentId={incident.id} responders={responders} />
           <IncidentMap lat={incident.lat} lng={incident.lng} label={requesterName} />
           {active && incident.lat != null && (
             <Button label="Walking directions" variant="outline" icon={<Navigation size={18} color={colors.ink} />} onPress={directions} />
@@ -342,12 +351,12 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
                 <Button label="I'm with them" variant="hero" tall style={{ flex: 1 }} loading={busy} onPress={() => setStatus('on_scene')} />
               )}
               <Button
-                label="911"
+                label={num}
                 variant="alert"
                 tall
                 style={{ flex: me.status === 'on_scene' || me.status === 'declined' ? 1 : 0.7 }}
                 icon={<Phone color={colors.paper} size={18} />}
-                onPress={() => call911(incident.id, userId, false)}
+                onPress={() => call911(incident.id, userId, false, num)}
               />
             </View>
           </View>
@@ -389,7 +398,15 @@ function ResponderRow({ responder }: { responder: Responder }) {
 
 function Timeline({ bundle, userId }: { bundle: IncidentBundle; userId: string }) {
   const items = useMemo(
-    () => bundle.events.filter((e) => e.kind === 'message' || e.kind === 'escalated_911' || (e.kind === 'created' && e.body)),
+    () =>
+      bundle.events.filter(
+        (e) =>
+          e.kind === 'message' ||
+          e.kind === 'escalated_911' ||
+          e.kind === 'voice' ||
+          e.kind === 'agent' ||
+          (e.kind === 'created' && e.body),
+      ),
     [bundle.events],
   );
   if (!items.length) return null;
@@ -400,8 +417,9 @@ function Timeline({ bundle, userId }: { bundle: IncidentBundle; userId: string }
         const mine = e.actor_id === userId;
         return (
           <View key={e.id} style={[styles.bubble, mine ? styles.mine : styles.theirs, e.kind === 'escalated_911' && styles.alertBubble]}>
-            {!mine && <Text style={styles.bubbleName}>{e.profiles?.display_name?.split(' ')[0] ?? 'HereO'}</Text>}
-            <Text style={{ color: mine ? colors.paper : colors.ink, fontSize: 16 }}>{e.body}</Text>
+            {!mine && <Text style={styles.bubbleName}>{e.kind === 'agent' ? 'HereO coordinator' : (e.profiles?.display_name?.split(' ')[0] ?? 'HereO')}</Text>}
+            {e.kind === 'voice' && <Text style={[styles.bubbleName, mine && { color: colors.mist }]}>SAID OUT LOUD</Text>}
+            <Text style={{ color: mine ? colors.paper : colors.ink, fontSize: 16 }}>{e.kind === 'voice' ? `“${e.body}”` : e.body}</Text>
           </View>
         );
       })}

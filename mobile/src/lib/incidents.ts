@@ -118,12 +118,12 @@ export async function updateIncidentLocation(incidentId: string, lat: number, ln
 }
 
 /** Opens the phone dialer on 911 and records that it happened. */
-export async function call911(incidentId: string | null, userId: string, isRequester: boolean) {
-  Linking.openURL('tel:911');
+export async function call911(incidentId: string | null, userId: string, isRequester: boolean, number: '911' | '999' = '911') {
+  Linking.openURL(`tel:${number}`);
   if (!incidentId) return;
   await supabase
     .from('incident_events')
-    .insert({ incident_id: incidentId, actor_id: userId, kind: 'escalated_911', body: 'Called 911' });
+    .insert({ incident_id: incidentId, actor_id: userId, kind: 'escalated_911', body: `Called ${number}` });
   if (isRequester) {
     await supabase.from('incidents').update({ escalated_911_at: new Date().toISOString() }).eq('id', incidentId);
   }
