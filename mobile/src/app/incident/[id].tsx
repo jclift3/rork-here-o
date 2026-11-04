@@ -1,14 +1,28 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Navigation, Phone, Send, Sparkles } from 'lucide-react-native';
-import { useEffect, useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { ArrowLeft, MapPin, Navigation, Phone, Send, Sparkles } from 'lucide-react-native';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Alert, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { IncidentMap } from '@/components/IncidentMap';
-import { MuseCoordinator } from '@/components/MuseCoordinator';
+import {
+  GradientPanel,
+  Label,
+  LiveMap,
+  ModelChip,
+  night,
+  night_styles,
+  Panel,
+  PersonRow,
+  Sheet,
+  Tracker,
+  walkTime,
+  type StepState,
+} from '@/components/MissionControl';
+import { modelName, MuseCoordinator } from '@/components/MuseCoordinator';
 import { SceneCard, TalkToHereO } from '@/components/MuseReport';
 import { AlarmOverlay, PinSheet } from '@/components/RingAlarm';
-import { Avatar, Body, Button, Card, Pill, Screen, SectionLabel, Title } from '@/components/ui';
+import { Body, Button, Screen, Title } from '@/components/ui';
 import {
   call911,
   closeIncident,
@@ -24,8 +38,8 @@ import { emergencyNumber } from '@/lib/muse';
 import { disarmRing, endHelpRequest, loadPinStatus, notifyRingEnded, useDuress, useRingFlow, type PinStatus } from '@/lib/ring';
 import { useUserId } from '@/lib/session';
 import { friendlyError, supabase } from '@/lib/supabase';
-import { colors, fonts, space } from '@/lib/theme';
-import type { Responder } from '@/lib/types';
+import { colors, space } from '@/lib/theme';
+import type { IncidentEvent, Responder } from '@/lib/types';
 
 const conduct = (n: string) => `Be present. Don't pursue. Call ${n} for danger.`;
 
@@ -156,14 +170,23 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
     ? incident.status === 'resolved'
       ? "You're safe"
       : 'Request cancelled'
-    : coming.length
-      ? 'Help is on the way'
-      : incident.dispatched_at
-        ? 'Your alert is out'
-        : 'Sending your alert…';
+    : coming.some((r) => r.status === 'on_scene')
+      ? 'Help is with you'
+      : coming.length
+        ? 'Help is on the way'
+        : incident.dispatched_at
+          ? 'Your alert is out'
+          : 'Sending your alert…';
+  const firstComing = coming[0];
+  const sub = firstComing
+    ? `${firstName(firstComing)} ${firstComing.status === 'on_scene' ? 'is with you' : `is coming${firstComing.distance_m != null ? `, ${walkTime(firstComing.distance_m)}` : ''}`}.`
+    : active
+      ? 'Your circle has been told. HereO is finding heroes near you.'
+      : '';
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+    <View style={styles.root}>
+      <StatusBar style="light" />
       {active && flow.incidentId === incident.id && (
         <AlarmOverlay
           emergencyNumber={num}
@@ -180,24 +203,35 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
         onClose={() => setEnding(null)}
       />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Screen edges={[]} style={{ paddingBottom: space.lg }}>
-          <BackButton />
-          <Title style={{ color: active ? colors.alert : colors.safe }}>{headline}</Title>
-          <BriefCard bundle={bundle} />
-          {active && <TalkToHereO incidentId={incident.id} />}
-          <MuseCoordinator incidentId={incident.id} responders={responders} />
-          <IncidentMap lat={incident.lat} lng={incident.lng} label="You" />
-          {active && <NeighboursComing incidentId={incident.id} />}
-          <SectionLabel>{responders.length ? 'Who knows' : 'Finding people nearby'}</SectionLabel>
-          {responders.map((r) => (
-            <ResponderRow key={r.user_id} responder={r} />
-          ))}
-          {!active && <ThankHelpers bundle={bundle} userId={userId} />}
-          <Timeline bundle={bundle} userId={userId} />
-          {active && <Button label="I pressed by mistake" variant="ghost" onPress={() => ask('cancelled')} />}
-        </Screen>
+        <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
+          <LiveMap lat={incident.lat} lng={incident.lng} label="You" active={active} />
+          <Sheet>
+            <Label color={active ? '#FF6B6E' : '#3CCB7F'}>{active ? `● LIVE · ${num} READY` : 'CLOSED'}</Label>
+            <Text accessibilityRole="header" style={night_styles.headline}>
+              {headline}
+            </Text>
+            {!!sub && <Text style={night_styles.sub}>{sub}</Text>}
+            <Tracker steps={trackerSteps(bundle)} />
+            <BriefCard bundle={bundle} />
+            {active && <TalkToHereO incidentId={incident.id} />}
+            {responders.length > 0 && (
+              <Panel>
+                <Label>{active ? 'WHO KNOWS' : 'WHO WAS THERE'}</Label>
+                {responders.map((r) => (
+                  <ResponderRow key={r.user_id} responder={r} />
+                ))}
+              </Panel>
+            )}
+            {active && <NeighboursComing incidentId={incident.id} />}
+            <MuseCoordinator incidentId={incident.id} responders={responders} />
+            <SceneCard path={incident.scene_path ?? null} events={bundle.events} title="What you shared" />
+            {!active && <ThankHelpers bundle={bundle} userId={userId} />}
+            <Timeline bundle={bundle} userId={userId} />
+            {active && <Button label="I pressed by mistake" variant="ghost" onPress={() => ask('cancelled')} />}
+          </Sheet>
+        </ScrollView>
         {active && (
-          <View style={styles.dock}>
+          <Dock>
             <MessageBox incidentId={incident.id} userId={userId} />
             <View style={styles.dockButtons}>
               <Button
@@ -208,13 +242,39 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
                 icon={<Phone color={colors.paper} size={20} />}
                 onPress={() => !justHidden() && call911(incident.id, userId, true, num)}
               />
-              <Button label="I'm safe" variant="safe" tall style={{ flex: 1 }} onPress={() => ask('resolved')} />
+              <Button label="I'm safe" variant="safe" tall style={styles.safeButton} onPress={() => ask('resolved')} />
             </View>
-          </View>
+          </Dock>
         )}
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
+}
+
+function firstName(r: Responder) {
+  return (r.profiles?.display_name || (r.kind === 'circle' ? 'Circle member' : 'A hero')).split(' ')[0];
+}
+
+/** Alert out → AI coordinating → hero on the way → with you. */
+function trackerSteps({ incident, responders }: IncidentBundle): { label: string; state: StepState }[] {
+  const closed = incident.status !== 'active';
+  const going = responders.find((r) => r.status === 'en_route' || r.status === 'on_scene');
+  const here = responders.some((r) => r.status === 'on_scene');
+  const out: StepState = incident.dispatched_at || closed ? 'done' : 'now';
+  const ai: StepState = incident.brief || going || closed ? 'done' : out === 'done' ? 'now' : 'next';
+  const way: StepState = here || (closed && going) ? 'done' : going ? 'now' : ai === 'done' ? 'now' : 'next';
+  const withYou: StepState = here ? (closed ? 'done' : 'now') : 'next';
+  return [
+    { label: 'Alert out', state: out },
+    { label: 'AI coordinating', state: ai },
+    { label: going ? `${firstName(going)} on the way` : 'Hero on the way', state: way },
+    { label: 'With you', state: withYou },
+  ];
+}
+
+function Dock({ children }: { children: ReactNode }) {
+  const insets = useSafeAreaInsets();
+  return <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom, space.md) }]}>{children}</View>;
 }
 
 /** What she sees after ending her request, with her PIN or her duress PIN alike. */
@@ -259,9 +319,9 @@ function NeighboursComing({ incidentId }: { incidentId: string }) {
   }, [incidentId]);
   if (!counts?.rung) return null;
   return (
-    <Card>
-      <Text style={styles.cardLabel}>HEREO NEARBY</Text>
-      <Body>
+    <Panel>
+      <Label>HEREO NEARBY</Label>
+      <Text style={night_styles.body}>
         {[
           counts.here ? `${counts.here} ${counts.here === 1 ? 'is' : 'are'} with you` : '',
           counts.going ? `${counts.going} ${counts.going === 1 ? 'is' : 'are'} on the way` : '',
@@ -269,8 +329,8 @@ function NeighboursComing({ incidentId }: { incidentId: string }) {
           .filter(Boolean)
           .join(', ') || `${counts.rung} ${counts.rung === 1 ? 'person' : 'people'} nearby rung`}
         {counts.here || counts.going ? ` (of ${counts.rung} people nearby rung).` : '.'}
-      </Body>
-    </Card>
+      </Text>
+    </Panel>
   );
 }
 
@@ -298,54 +358,88 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
     Linking.openURL(Platform.OS === 'ios' ? `http://maps.apple.com/?daddr=${q}&dirflg=w` : `https://www.google.com/maps/dir/?api=1&destination=${q}&travelmode=walking`);
   };
 
+  const forHeroes = latestNote(events, 'For heroes: ');
+  const critical = incident.urgency === 'critical';
+
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+    <View style={styles.root}>
+      <StatusBar style="light" />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Screen edges={[]} style={{ paddingBottom: space.lg }}>
-          <BackButton />
-          <View style={{ flexDirection: 'row', gap: space.sm, flexWrap: 'wrap' }}>
-            <Pill label={incident.urgency} color={incident.urgency === 'critical' ? colors.alert : colors.ink} filled />
-            {incident.mode === 'her_o' && <Pill label="Her-O" color={colors.herO} filled />}
-            {me && <Pill label={me.kind === 'circle' ? 'Your circle' : 'Hero'} color={colors.heroStart} />}
-          </View>
-          <Title style={{ fontSize: 30 }}>{active ? `${requesterName} needs help` : 'This request is closed'}</Title>
-          {active && incident.duress_at && (
-            <Card tone="alert">
-              <Text style={[styles.cardLabel, { color: colors.alert }]}>DURESS PIN USED</Text>
-              <Body>
-                {requesterName} ended the alert with their duress PIN. Their phone shows all clear, but they may not be
-                safe. Call {num} and don&apos;t tell them you know.
-              </Body>
-            </Card>
-          )}
-          {me?.role && active && (
-            <Card style={{ borderWidth: 2, borderColor: colors.heroStart, backgroundColor: colors.paper }}>
-              <Text style={styles.cardLabel}>YOUR JOB</Text>
-              <Text style={styles.role}>{me.role}</Text>
-              <Body muted>{conduct(num)}</Body>
-            </Card>
-          )}
-          <BriefCard bundle={bundle} />
-          <SceneCard path={incident.scene_path ?? null} events={events} />
-          <MuseCoordinator incidentId={incident.id} responders={responders} />
-          <IncidentMap lat={incident.lat} lng={incident.lng} label={requesterName} />
-          {active && incident.lat != null && (
-            <Button label="Walking directions" variant="outline" icon={<Navigation size={18} color={colors.ink} />} onPress={directions} />
-          )}
-          <SectionLabel>Responders</SectionLabel>
-          {responders.map((r) => (
-            <ResponderRow key={r.user_id} responder={r} />
-          ))}
-          <Timeline bundle={bundle} userId={userId} />
-        </Screen>
+        <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
+          <LiveMap lat={incident.lat} lng={incident.lng} label={requesterName} active={active} />
+          <Sheet>
+            <View style={{ flexDirection: 'row', gap: space.sm, flexWrap: 'wrap', alignItems: 'center' }}>
+              <Label color={active ? (critical ? '#FF6B6E' : '#FF7AB8') : night.muted}>
+                {active ? `● ${incident.urgency.toUpperCase()} · ${me?.kind === 'circle' ? 'YOUR CIRCLE' : 'HERO ALERT'}` : 'CLOSED'}
+              </Label>
+              {incident.mode === 'her_o' && <ModelChip label="Her-O" />}
+            </View>
+            <Text accessibilityRole="header" style={night_styles.headline}>
+              {active ? `${requesterName} needs help` : 'This request is closed'}
+            </Text>
+            {active && me?.distance_m != null && <Text style={night_styles.sub}>{walkTime(me.distance_m)} from you</Text>}
+            {active && incident.duress_at && (
+              <Panel accent={colors.alert}>
+                <Label color="#FF6B6E">DURESS PIN USED</Label>
+                <Text style={night_styles.body}>
+                  {requesterName} ended the alert with their duress PIN. Their phone shows all clear, but they may not be
+                  safe. Call {num} and don&apos;t tell them you know.
+                </Text>
+              </Panel>
+            )}
+            {me?.role && active && (
+              <GradientPanel>
+                <View style={styles.between}>
+                  <Label color={night.text}>YOUR JOB</Label>
+                  <ModelChip label={modelName(incident.agent_model ?? '')} tone={incident.agent_model?.startsWith('muse') ? 'meta' : 'rules'} />
+                </View>
+                <Text style={night_styles.big}>{me.role}</Text>
+                <Text style={night_styles.sub}>{conduct(num)}</Text>
+              </GradientPanel>
+            )}
+            {active && forHeroes && (
+              <Panel accent={colors.heroStart}>
+                <View style={styles.between}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <MapPin size={15} color={colors.heroStart} />
+                    <Label>WHERE TO FIND {requesterName.toUpperCase()}</Label>
+                  </View>
+                  <ModelChip label="Muse Spark" />
+                </View>
+                <Text style={night_styles.body}>{forHeroes}</Text>
+              </Panel>
+            )}
+            <SceneCard path={incident.scene_path ?? null} events={events} title={`Where ${requesterName} is`} />
+            {active && incident.lat != null && (
+              <Button
+                label="Walking directions"
+                variant="outline"
+                style={styles.darkOutline}
+                icon={<Navigation size={18} color={colors.ink} />}
+                onPress={directions}
+              />
+            )}
+            <BriefCard bundle={bundle} />
+            {responders.length > 0 && (
+              <Panel>
+                <Label>RESPONDERS</Label>
+                {responders.map((r) => (
+                  <ResponderRow key={r.user_id} responder={r} me={r.user_id === userId} />
+                ))}
+              </Panel>
+            )}
+            <MuseCoordinator incidentId={incident.id} responders={responders} />
+            <Timeline bundle={bundle} userId={userId} />
+          </Sheet>
+        </ScrollView>
         {active && me && (
-          <View style={styles.dock}>
+          <Dock>
             <MessageBox incidentId={incident.id} userId={userId} />
             <View style={styles.dockButtons}>
               {me.status === 'notified' && (
                 <>
                   <Button label="I'm on my way" variant="hero" tall style={{ flex: 2 }} loading={busy} onPress={() => setStatus('en_route')} />
-                  <Button label="Can't now" variant="outline" tall style={{ flex: 1 }} onPress={() => setStatus('declined')} />
+                  <Button label="Can't now" variant="outline" tall style={[{ flex: 1 }, styles.darkOutline]} onPress={() => setStatus('declined')} />
                 </>
               )}
               {me.status === 'en_route' && (
@@ -360,40 +454,55 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
                 onPress={() => call911(incident.id, userId, false, num)}
               />
             </View>
-          </View>
+          </Dock>
         )}
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
+}
+
+/** The coordinator's latest note for one audience, without its prefix. */
+function latestNote(events: IncidentEvent[], prefix: string): string | null {
+  const e = [...events].reverse().find((x) => x.kind === 'agent' && x.body?.startsWith(prefix));
+  return e?.body ? e.body.slice(prefix.length) : null;
 }
 
 function BriefCard({ bundle }: { bundle: IncidentBundle }) {
   const { incident } = bundle;
   const urgent = incident.call_911_recommended && incident.status === 'active';
   return (
-    <Card tone={urgent ? 'alert' : undefined}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <Sparkles size={16} color={urgent ? colors.alert : colors.heroStart} />
-        <Text style={styles.cardLabel}>LIVE BRIEF</Text>
+    <Panel accent={urgent ? colors.alert : colors.heroStart}>
+      <View style={styles.between}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Sparkles size={15} color={urgent ? colors.alert : colors.heroStart} />
+          <Label>LIVE BRIEF</Label>
+        </View>
+        {incident.brief && <ModelChip label={modelName(incident.agent_model ?? 'muse-spark')} tone={urgent ? 'alert' : 'meta'} />}
       </View>
-      <Text style={styles.brief} accessibilityLiveRegion="polite">{incident.brief ?? 'Alerting your circle and finding heroes nearby…'}</Text>
-    </Card>
+      <Text style={night_styles.big} accessibilityLiveRegion="polite">
+        {incident.brief ?? 'Alerting your circle and finding heroes nearby…'}
+      </Text>
+    </Panel>
   );
 }
 
-function ResponderRow({ responder }: { responder: Responder }) {
-  const name = responder.profiles?.display_name || (responder.kind === 'circle' ? 'Circle member' : 'Hero');
+function ResponderRow({ responder, me }: { responder: Responder; me?: boolean }) {
   const color =
-    responder.status === 'on_scene' ? colors.safe : responder.status === 'en_route' ? colors.heroStart : colors.muted;
+    responder.status === 'on_scene' ? '#3CCB7F' : responder.status === 'en_route' ? '#FF7AB8' : responder.status === 'declined' ? night.faint : night.muted;
+  const sub = [
+    me ? 'You' : responder.kind === 'circle' ? 'Circle' : 'Hero',
+    responder.distance_m != null && responder.status !== 'on_scene' ? walkTime(responder.distance_m) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
   return (
-    <View style={styles.responder}>
-      <Avatar name={name} size={40} color={responder.kind === 'guardian' ? colors.heroStart : colors.ink} />
-      <View style={{ flex: 1 }}>
-        <Text style={styles.responderName}>{name.split(' ')[0]}</Text>
-        <Body muted style={{ fontSize: 14 }}>{responder.kind === 'circle' ? 'Your circle' : 'Hero'}</Body>
-      </View>
-      <Pill label={RESPONDER_STATUS_LABEL[responder.status]} color={color} filled={responder.status !== 'notified'} />
-    </View>
+    <PersonRow
+      name={firstName(responder)}
+      sub={sub}
+      status={RESPONDER_STATUS_LABEL[responder.status]}
+      statusColor={color}
+      hero={responder.kind === 'guardian'}
+    />
   );
 }
 
@@ -413,14 +522,32 @@ function Timeline({ bundle, userId }: { bundle: IncidentBundle; userId: string }
   if (!items.length) return null;
   return (
     <>
-      <SectionLabel>Messages</SectionLabel>
+      <Text style={night_styles.section}>MESSAGES</Text>
       {items.map((e) => {
         const mine = e.actor_id === userId;
+        const agent = e.kind === 'agent';
         return (
-          <View key={e.id} style={[styles.bubble, mine ? styles.mine : styles.theirs, e.kind === 'escalated_911' && styles.alertBubble]}>
-            {!mine && <Text style={styles.bubbleName}>{e.kind === 'agent' ? 'HereO coordinator' : (e.profiles?.display_name?.split(' ')[0] ?? 'HereO')}</Text>}
-            {e.kind === 'voice' && <Text style={[styles.bubbleName, mine && { color: colors.mist }]}>SAID OUT LOUD</Text>}
-            <Text style={{ color: mine ? colors.paper : colors.ink, fontSize: 16 }}>{e.kind === 'voice' ? `“${e.body}”` : e.body}</Text>
+          <View
+            key={e.id}
+            style={[
+              styles.bubble,
+              mine ? styles.mine : styles.theirs,
+              agent && styles.agentBubble,
+              e.kind === 'escalated_911' && styles.alertBubble,
+            ]}>
+            {!mine && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={styles.bubbleName}>{agent ? 'HereO coordinator' : (e.profiles?.display_name?.split(' ')[0] ?? 'HereO')}</Text>
+                {agent && <ModelChip label="Muse Spark" />}
+              </View>
+            )}
+            {e.kind === 'voice' && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[styles.bubbleName, mine && { color: 'rgba(255,255,255,0.75)' }]}>SAID OUT LOUD</Text>
+                <ModelChip label="Muse Voice" />
+              </View>
+            )}
+            <Text style={{ color: night.text, fontSize: 16, lineHeight: 22 }}>{e.kind === 'voice' ? `“${e.body}”` : e.body}</Text>
           </View>
         );
       })}
@@ -447,14 +574,14 @@ function MessageBox({ incidentId, userId }: { incidentId: string; userId: string
         value={text}
         onChangeText={setText}
         placeholder="Message everyone helping"
-        placeholderTextColor={colors.muted}
+        placeholderTextColor={night.faint}
         style={styles.messageInput}
         maxLength={1000}
         onSubmitEditing={send}
         returnKeyType="send"
       />
       <Pressable accessibilityRole="button" accessibilityLabel="Send" onPress={send} hitSlop={8} style={styles.sendButton}>
-        <Send size={20} color={colors.paper} />
+        <Send size={20} color={night.text} />
       </Pressable>
     </View>
   );
@@ -468,7 +595,7 @@ function ThankHelpers({ bundle, userId }: { bundle: IncidentBundle; userId: stri
   );
   const helpers = bundle.responders.filter((r) => acted.has(r.user_id));
   const [sent, setSent] = useState(false);
-  if (!helpers.length || sent) return sent ? <Body>Thanks sent.</Body> : null;
+  if (!helpers.length || sent) return sent ? <Text style={night_styles.body}>Thanks sent.</Text> : null;
   const thank = async () => {
     const rows = helpers.map((h) => ({
       incident_id: bundle.incident.id,
@@ -484,26 +611,36 @@ function ThankHelpers({ bundle, userId }: { bundle: IncidentBundle; userId: stri
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.paper },
+  root: { flex: 1, backgroundColor: night.bg },
   dock: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.line,
-    padding: space.md,
+    borderTopColor: night.line,
+    paddingHorizontal: space.md,
+    paddingTop: space.md,
     gap: space.sm,
-    backgroundColor: colors.paper,
+    backgroundColor: night.card,
   },
   dockButtons: { flexDirection: 'row', gap: space.sm },
-  cardLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2, color: colors.ink },
-  brief: { fontSize: 18, lineHeight: 25, color: colors.ink },
-  role: { fontFamily: fonts.displayMedium, fontSize: 20, lineHeight: 27, color: colors.ink },
-  responder: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  responderName: { fontFamily: fonts.displayMedium, fontSize: 16, color: colors.ink },
-  bubble: { padding: 12, borderRadius: 16, maxWidth: '85%', gap: 2 },
-  mine: { alignSelf: 'flex-end', backgroundColor: colors.ink },
-  theirs: { alignSelf: 'flex-start', backgroundColor: colors.mist },
-  alertBubble: { backgroundColor: colors.alertSoft },
-  bubbleName: { fontSize: 12, fontWeight: '700', color: colors.muted },
+  safeButton: { flex: 1, backgroundColor: 'transparent', borderColor: colors.safe },
+  darkOutline: { backgroundColor: night.text, borderColor: night.text },
+  between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
+  bubble: { padding: 12, borderRadius: 16, maxWidth: '88%', gap: 4 },
+  mine: { alignSelf: 'flex-end', backgroundColor: colors.heroStart },
+  theirs: { alignSelf: 'flex-start', backgroundColor: night.raised },
+  agentBubble: { borderWidth: 1, borderColor: 'rgba(232,51,139,0.4)', backgroundColor: night.card },
+  alertBubble: { backgroundColor: 'rgba(229,37,42,0.22)' },
+  bubbleName: { fontSize: 12, fontWeight: '700', color: night.muted },
   messageBox: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  messageInput: { flex: 1, borderWidth: 2, borderColor: colors.ink, minHeight: 48, paddingHorizontal: 14, fontSize: 16, color: colors.ink },
-  sendButton: { width: 48, height: 48, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
+  messageInput: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: night.line,
+    backgroundColor: night.bg,
+    borderRadius: 14,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    fontSize: 16,
+    color: night.text,
+  },
+  sendButton: { width: 48, height: 48, backgroundColor: night.raised, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
 });

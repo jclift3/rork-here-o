@@ -8,7 +8,7 @@ import { Camera, ImageIcon, Mic, ShieldCheck } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Card } from '@/components/ui';
+import { Label, ModelChip, night, Panel } from '@/components/MissionControl';
 import { shareScene, useSceneUrl, useVoiceReport } from '@/lib/muse';
 import { friendlyError } from '@/lib/supabase';
 import { colors, fonts, space } from '@/lib/theme';
@@ -41,7 +41,7 @@ export function TalkToHereO({ incidentId }: { incidentId: string }) {
   };
 
   return (
-    <Card>
+    <Panel>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Hold to talk to HereO"
@@ -54,44 +54,54 @@ export function TalkToHereO({ incidentId }: { incidentId: string }) {
         style={[styles.talk, voice.state === 'recording' && styles.talkActive]}>
         {voice.state === 'sending' ? <ActivityIndicator color={colors.paper} /> : <Mic color={colors.paper} size={24} />}
         <Text style={styles.talkText}>{hint}</Text>
+        <ModelChip label="Muse Voice" />
       </Pressable>
       {voice.transcript && <Text style={styles.transcript}>“{voice.transcript}”</Text>}
       <View style={styles.row}>
         <Pressable accessibilityRole="button" onPress={share('camera')} disabled={sharing} style={styles.small}>
-          <Camera size={18} color={colors.ink} />
+          <Camera size={18} color={night.text} />
           <Text style={styles.smallText}>Photo of where I am</Text>
         </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="Share a photo from your library" onPress={share('library')} disabled={sharing} style={[styles.small, { flex: 0 }]}>
-          {sharing ? <ActivityIndicator color={colors.ink} /> : <ImageIcon size={18} color={colors.ink} />}
+          {sharing ? <ActivityIndicator color={night.text} /> : <ImageIcon size={18} color={night.text} />}
         </Pressable>
       </View>
       <View style={styles.privacy}>
-        <ShieldCheck size={14} color={colors.muted} />
-        <Text style={styles.privacyText}>Faces and number plates are blurred before anyone sees your photo.</Text>
+        <ShieldCheck size={14} color={night.muted} />
+        <Text style={styles.privacyText}>SAM 3.1 blurs faces and number plates before anyone sees your photo.</Text>
       </View>
-    </Card>
+    </Panel>
   );
 }
 
 /** The latest blurred scene photo and what the AI says about the place. */
-export function SceneCard({ path, events }: { path: string | null; events: IncidentEvent[] }) {
+export function SceneCard({ path, events, title = 'Where they are' }: { path: string | null; events: IncidentEvent[]; title?: string }) {
   const url = useSceneUrl(path);
   const latest = [...events].reverse().find((e) => e.kind === 'scene');
   if (!path && !latest) return null;
   const description = latest?.body?.replace(/\s*\[\d+ blurred\]$/, '') ?? '';
   const blurred = latest?.body?.match(/\[(\d+) blurred\]$/)?.[1];
   return (
-    <Card>
-      <Text style={styles.label}>WHERE THEY ARE</Text>
-      {url && <Image source={{ uri: url }} style={styles.photo} contentFit="cover" accessibilityLabel="Photo of the place, faces blurred" />}
-      {!!description && <Text style={styles.description}>{description}</Text>}
-      <View style={styles.privacy}>
-        <ShieldCheck size={14} color={colors.muted} />
-        <Text style={styles.privacyText}>
-          {blurred && blurred !== '0' ? `${blurred} faces or plates blurred by SAM 3.1.` : 'Checked for faces and plates by SAM 3.1.'}
-        </Text>
+    <Panel style={{ padding: 0, overflow: 'hidden' }}>
+      {url ? (
+        <View>
+          <Image source={{ uri: url }} style={styles.photo} contentFit="cover" accessibilityLabel="Photo of the place, faces blurred" />
+          <View style={styles.badge}>
+            <ShieldCheck size={13} color={night.text} />
+            <Text style={styles.badgeText}>
+              {blurred && blurred !== '0' ? `SAM 3.1 · ${blurred} blurred` : 'SAM 3.1 · checked'}
+            </Text>
+          </View>
+        </View>
+      ) : null}
+      <View style={{ padding: 16, gap: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Label>{title.toUpperCase()}</Label>
+          {!!description && <ModelChip label="Muse Spark vision" />}
+        </View>
+        {!!description && <Text style={styles.description}>{description}</Text>}
       </View>
-    </Card>
+    </Panel>
   );
 }
 
@@ -100,14 +110,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    backgroundColor: colors.ink,
+    backgroundColor: night.raised,
     borderRadius: 16,
     minHeight: 64,
     paddingHorizontal: space.md,
   },
   talkActive: { backgroundColor: colors.alert },
-  talkText: { flex: 1, color: colors.paper, fontFamily: fonts.displayMedium, fontSize: 17 },
-  transcript: { fontSize: 15, lineHeight: 21, color: colors.ink, fontStyle: 'italic' },
+  talkText: { flex: 1, color: night.text, fontFamily: fonts.displayMedium, fontSize: 17 },
+  transcript: { fontSize: 15, lineHeight: 21, color: night.text, fontStyle: 'italic' },
   row: { flexDirection: 'row', gap: space.sm },
   small: {
     flex: 1,
@@ -115,16 +125,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.sm,
-    borderWidth: 2,
-    borderColor: colors.ink,
+    borderWidth: 1.5,
+    borderColor: night.line,
     borderRadius: 12,
     minHeight: 48,
     paddingHorizontal: space.md,
   },
-  smallText: { fontFamily: fonts.displayMedium, fontSize: 15, color: colors.ink },
+  smallText: { fontFamily: fonts.displayMedium, fontSize: 15, color: night.text },
   privacy: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  privacyText: { flex: 1, fontSize: 12, color: colors.muted },
-  label: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2, color: colors.ink },
-  photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: 12, backgroundColor: colors.mist },
-  description: { fontSize: 16, lineHeight: 23, color: colors.ink },
+  privacyText: { flex: 1, fontSize: 12, color: night.muted },
+  photo: { width: '100%', aspectRatio: 4 / 3, backgroundColor: night.raised },
+  badge: {
+    position: 'absolute',
+    left: 12,
+    bottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(11,11,15,0.75)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  badgeText: { color: night.text, fontSize: 12, fontWeight: '800', letterSpacing: 0.3 },
+  description: { fontSize: 17, lineHeight: 24, color: night.text },
 });
