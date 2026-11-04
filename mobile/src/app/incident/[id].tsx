@@ -520,7 +520,7 @@ function BriefCard({ bundle }: { bundle: IncidentBundle }) {
       <View style={styles.between}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Sparkles size={15} color={urgent ? colors.alert : colors.heroStart} />
-          <Label>LIVE BRIEF</Label>
+          <Label>{incident.status === 'active' ? 'LIVE BRIEF' : 'LAST BRIEF'}</Label>
         </View>
         {incident.brief && <ModelChip label={modelName(incident.agent_model ?? 'muse-spark')} tone={urgent ? 'alert' : 'meta'} />}
       </View>
