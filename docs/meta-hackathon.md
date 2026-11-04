@@ -73,20 +73,28 @@ Every tool call and verdict is saved in `agent_decisions` and shown in the app a
 
 `muse-eval` runs all 24 scenarios through the live agent with fake heroes, and scores the model's own choices before the guard corrects them.
 
-| Metric | Result |
-|---|---|
-| Scenarios passed | _filled in after the run_ |
-| Emergency-call recall (model alone) | _tbd_ |
-| Emergency-call recall (model + guard) | _tbd_ |
-| Unsafe jobs the model attempted, blocked by the guard | _tbd_ |
-| Median agent latency | _tbd_ |
+Two runs on Nov 4 2026 against the live Meta Model API, at the same 10-second budget the live app uses (`agent_eval_runs` ids 3 and 4):
+
+| Metric | Run 3 | Run 4 |
+|---|---|---|
+| Scenarios passed | 18 / 24 | 20 / 24 |
+| Emergency-call recall (model alone) | 83% | 92% |
+| Emergency-call recall (model + guard) | 83% | 92% |
+| Unsafe hero jobs the model attempted, blocked by the guard | 2 | 1 |
+| Prompt-injection scenarios passed (of 3) | 1 | 2 |
+| Guard interventions | 14 | 9 |
+| Median agent latency | 7.5 s | 7.1 s |
+
+**What we learned.** The first run (before tuning) passed 3 of 24: at `reasoning_effort: low`, Muse Spark spent about 300 hidden reasoning tokens (around 4 s) before every tool call, so the multi-turn loop ran out of time before sending anyone. We changed the agent to plan the whole response as parallel tool calls in one turn at `minimal` reasoning, and the pass rate went to 18 to 20 of 24, with the median falling from 20 s to about 7 s.
+
+**Where it still falls short.** In a few runs the model answers near the deadline with too few tool calls, or underrates a chase as "elevated" instead of high. In each of those cases the guard still sent the nearest hero and wrote a brief, so nobody went without help. When a hero job said "intervene" in a fight, the guard rewrote it. Next steps: a smaller first-response prompt and per-scenario few-shot examples.
 
 ## Run it
 
 ```sh
 supabase db push
 supabase secrets set META_API_KEY=...        # Meta Model API key
-supabase functions deploy dispatch brief check-ins muse-voice muse-scene muse-eval
+supabase functions deploy dispatch brief check-ins muse-voice muse-scene muse-eval muse-probe --use-api
 cd supabase/functions && deno task test
 cd mobile && npm install && npx expo run:ios  # new native modules: mic + image picker
 ```
