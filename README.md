@@ -1,5 +1,7 @@
 # HereO
 
+> **Meta Global AI Developer Hackathon entry:** see [docs/meta-hackathon.md](docs/meta-hackathon.md) for Muse Dispatcher, the AI coordinator built on Muse Spark, Muse Voice Transcribe and SAM 3.1, and for exactly what was built during the event.
+
 A community guardian network for iOS and Android. Hold one button and the people you trust, plus trained guardians nearby, know where you are within seconds. An AI coordinator triages the moment, gives each guardian one clear job, and keeps a live brief everyone shares. Call 911 is always one tap away.
 
 Guardians are neighbors who show up: be present, de-escalate, stay with the person, call 911. They never pursue or confront anyone, and the system enforces that in code (`supabase/functions/_shared/safety.ts`).
