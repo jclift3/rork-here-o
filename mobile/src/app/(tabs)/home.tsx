@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ChevronRight, Footprints, PhoneIncoming } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Aurora, Glass } from '@/components/Glass';
@@ -31,6 +31,7 @@ interface Assignment {
 export default function Home() {
   const { profile } = useSession();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const userId = useUserId();
   const { mode, setMode } = useMode();
   const [nearby, setNearby] = useState<number | null>(null);
@@ -166,7 +167,7 @@ export default function Home() {
         })}
 
         <View style={styles.holdWrap}>
-          <HoldToHelp size={230} glow onComplete={sendAlert} onTap={() => router.push('/help')} />
+          <HoldToHelp size={height < 700 ? 180 : 230} glow onComplete={sendAlert} onTap={() => router.push('/help')} />
           <Text style={styles.holdHint}>
             {mode === 'her_o'
               ? 'Her-O mode: only verified women heroes are sent.'
@@ -270,7 +271,7 @@ function ModeSwitch({ mode, onChange }: { mode: HelpMode; onChange: (m: HelpMode
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#07070B' },
-  content: { padding: space.md, gap: space.md, paddingBottom: 130 },
+  content: { padding: space.md, gap: space.md, paddingBottom: 160 },
   header: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: space.xs },
   hello: { fontFamily: fonts.display, fontSize: 32, color: colors.paper, letterSpacing: -0.5 },
   helloSub: { fontSize: 15, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
   inviteTitle: { fontFamily: fonts.display, fontSize: 22, lineHeight: 27, color: colors.paper },
   invitePill: { alignSelf: 'flex-start', borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 8, marginTop: space.xs },
   invitePillText: { fontWeight: '800', fontSize: 13, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.paper },
-  holdWrap: { alignItems: 'center', gap: space.lg, paddingVertical: space.xl },
+  holdWrap: { alignItems: 'center', gap: space.lg, paddingVertical: space.lg },
   holdHint: { textAlign: 'center', fontSize: 15, lineHeight: 21, color: 'rgba(255,255,255,0.7)', paddingHorizontal: space.lg },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md },
   rowTitle: { flex: 1, fontFamily: fonts.displayMedium, fontSize: 17, color: colors.paper },

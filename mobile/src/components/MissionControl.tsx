@@ -32,14 +32,23 @@ export function LiveMap({ lat, lng, label, active }: { lat: number | null; lng: 
   const { height } = useWindowDimensions();
   // About a quarter of the screen, so the brief stays above the fold on small phones.
   const mapHeight = Math.round(Math.min(MAP_HEIGHT, height * 0.26));
+  const viewHeight = mapHeight + insets.top;
+  // Centre the pin in the strip you can see (below the status bar, above the
+  // sheet's rounded edge) by moving the camera north of it. No mapPadding: it
+  // made the camera jump when the screen re-rendered.
+  const delta = 0.005;
+  const shiftPx = insets.top / 2 - 14;
+  const region = lat != null && lng != null
+    ? { latitude: lat + (shiftPx / viewHeight) * delta, longitude: lng, latitudeDelta: delta, longitudeDelta: delta }
+    : null;
   return (
     <View style={[styles.mapWrap, { height: mapHeight + insets.top }]}>
-      {lat != null && lng != null ? (
+      {lat != null && lng != null && region ? (
         <MapView
           style={StyleSheet.absoluteFill}
-          region={{ latitude: lat, longitude: lng, latitudeDelta: 0.005, longitudeDelta: 0.005 }}
-          // Centre the pin in the strip you can see: below the status bar, above the sheet.
-          mapPadding={{ top: insets.top, right: 0, bottom: 28, left: 0 }}
+          region={region}
+          scrollEnabled={false}
+          zoomEnabled={false}
           userInterfaceStyle="dark"
           pitchEnabled={false}
           rotateEnabled={false}
@@ -108,7 +117,13 @@ export function StatusBackdrop() {
 
 /** The dark sheet that overlaps the bottom of the map. */
 export function Sheet({ children }: { children: ReactNode }) {
-  return <View style={styles.sheet}>{children}</View>;
+  return (
+    <View style={styles.sheet}>
+      {/* Solid at the rounded top edge so the map never shows through, fading into the aurora. */}
+      <LinearGradient pointerEvents="none" colors={['#07070B', 'rgba(7,7,11,0)']} style={styles.sheetFade} />
+      {children}
+    </View>
+  );
 }
 
 export function Panel({ children, style, accent }: { children: ReactNode; style?: StyleProp<ViewStyle>; accent?: string }) {
@@ -254,11 +269,13 @@ const styles = StyleSheet.create({
   pinBox: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center' },
   pinRing: { position: 'absolute', width: 72, height: 72, borderRadius: 36, borderWidth: 3 },
   pinDot: { width: 20, height: 20, borderRadius: 10, borderWidth: 3, borderColor: night.text },
+  sheetFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 140 },
   sheet: {
     marginTop: -28,
+    overflow: 'hidden',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    backgroundColor: 'rgba(7,7,11,0.35)',
+    backgroundColor: 'transparent',
     paddingHorizontal: space.md,
     paddingTop: space.lg,
     paddingBottom: space.xl,

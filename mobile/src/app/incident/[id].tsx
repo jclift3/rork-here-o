@@ -478,6 +478,11 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
         <StatusBackdrop />
         {active && me && (
           <Dock>
+            {me.status === 'notified' && (
+              <Pressable accessibilityRole="button" onPress={() => setStatus('declined')} hitSlop={8} style={styles.cantNow}>
+                <Text style={styles.cantNowText}>Can’t go right now</Text>
+              </Pressable>
+            )}
             {withThem && (
               <View style={styles.withRow}>
                 <View style={styles.withDot} />
@@ -487,10 +492,7 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
             <MessageBox incidentId={incident.id} userId={userId} />
             <View style={styles.dockButtons}>
               {me.status === 'notified' && (
-                <>
-                  <Button label="I'm on my way" variant="hero" tall style={{ flex: 2 }} loading={busy} onPress={() => setStatus('en_route')} />
-                  <Button label="Can't now" variant="ghost" tall style={[{ flex: 1 }, styles.darkGhost]} onPress={() => setStatus('declined')} />
-                </>
+                <Button label="I'm on my way" variant="hero" tall style={{ flex: 1 }} loading={busy} onPress={() => setStatus('en_route')} />
               )}
               {me.status === 'en_route' && (
                 <Button label="I'm with them" variant="hero" tall style={{ flex: 1 }} loading={busy} onPress={() => setStatus('on_scene')} />
@@ -499,7 +501,7 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
                 label={me.status === 'on_scene' || me.status === 'declined' ? `Call ${num}` : num}
                 variant="alert"
                 tall
-                style={{ flex: me.status === 'on_scene' || me.status === 'declined' ? 1 : 0.7 }}
+                style={me.status === 'on_scene' || me.status === 'declined' ? { flex: 1 } : { width: 96 }}
                 icon={me.status === 'on_scene' || me.status === 'declined' ? <Phone color={colors.paper} size={18} /> : undefined}
                 onPress={() => call911(incident.id, userId, false, num)}
               />
@@ -675,6 +677,8 @@ const styles = StyleSheet.create({
   dock: { padding: space.sm + 4, gap: space.sm },
   dockButtons: { flexDirection: 'row', gap: space.sm },
   safeButton: { flex: 1, backgroundColor: 'transparent', borderColor: colors.safe },
+  cantNow: { alignSelf: 'center', paddingVertical: 2 },
+  cantNowText: { color: night.muted, fontSize: 14, fontWeight: '700' },
   withRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   withDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.safe },
   withText: { color: '#3CCB7F', fontSize: 14, fontWeight: '800', letterSpacing: 0.3 },
