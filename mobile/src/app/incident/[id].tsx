@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ArrowLeft, MapPin, Navigation, Phone, Send, Sparkles } from 'lucide-react-native';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Alert, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -102,6 +102,7 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
   const justHidden = () => Date.now() - hiddenAt < 700;
   const active = incident.status === 'active';
   const num = emergencyNumber(incident.lat, incident.lng);
+  const raeScroll = useRef<ScrollView>(null);
 
   useEffect(() => {
     loadPinStatus().then(setPinStatus);
@@ -179,6 +180,7 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
           ? 'Your alert is out'
           : 'Sending your alert…';
   const firstComing = coming[0];
+  const arrived = coming.some((r) => r.status === 'on_scene');
   const sub = firstComing
     ? `${firstName(firstComing)} ${firstComing.status === 'on_scene' ? 'is with you' : `is coming${firstComing.distance_m != null ? `, ${walkTime(firstComing.distance_m)}` : ''}`}.`
     : active
@@ -187,6 +189,7 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
 
   return (
     <View style={styles.root}>
+      <ScrollToTopWhen when={arrived || !active} scrollRef={raeScroll} />
       <StatusBar style="light" />
       {active && flow.incidentId === incident.id && (
         <AlarmOverlay
@@ -204,7 +207,7 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
         onClose={() => setEnding(null)}
       />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
+        <ScrollView ref={raeScroll} style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
           <LiveMap lat={incident.lat} lng={incident.lng} label="You" active={active} />
           <Sheet>
             <Label color={active ? '#FF6B6E' : '#3CCB7F'}>{active ? `● LIVE · ${num} READY` : 'CLOSED'}</Label>
@@ -251,6 +254,14 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
       </KeyboardAvoidingView>
     </View>
   );
+}
+
+/** Brings the top of the screen (headline, tracker) back into view when the moment comes. */
+function ScrollToTopWhen({ when, scrollRef }: { when: boolean; scrollRef: React.RefObject<ScrollView | null> }) {
+  useEffect(() => {
+    if (when) scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, [when, scrollRef]);
+  return null;
 }
 
 function firstName(r: Responder) {
@@ -362,13 +373,16 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
   };
 
   const forHeroes = latestNote(events, 'For heroes: ');
+  const withThem = active && me?.status === 'on_scene';
+  const niaScroll = useRef<ScrollView>(null);
   const critical = incident.urgency === 'critical';
 
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
+        <ScrollToTopWhen when={withThem || !active} scrollRef={niaScroll} />
+        <ScrollView ref={niaScroll} style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
           <LiveMap lat={incident.lat} lng={incident.lng} label={requesterName} active={active} />
           <Sheet>
             <View style={{ flexDirection: 'row', gap: space.sm, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -378,9 +392,14 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
               {incident.mode === 'her_o' && <ModelChip label="Her-O" />}
             </View>
             <Text accessibilityRole="header" style={night_styles.headline}>
-              {active ? `${requesterName} needs help` : 'This request is closed'}
+              {withThem ? `You're with ${requesterName}` : active ? `${requesterName} needs help` : 'This request is closed'}
             </Text>
-            {active && me?.distance_m != null && <Text style={night_styles.sub}>{walkTime(me.distance_m)} from you</Text>}
+            {withThem ? (
+              <Text style={night_styles.sub}>{requesterName} has been told you&apos;re here. Stay with them until they say they&apos;re safe.</Text>
+            ) : (
+              active && me?.distance_m != null && <Text style={night_styles.sub}>{walkTime(me.distance_m)} from you</Text>
+            )}
+            {active && me && me.status !== 'notified' && me.status !== 'declined' && <Tracker steps={heroSteps(me.status, requesterName)} />}
             {active && incident.duress_at && (
               <Panel accent={colors.alert}>
                 <Label color="#FF6B6E">DURESS PIN USED</Label>
@@ -438,6 +457,12 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
         <StatusBackdrop />
         {active && me && (
           <Dock>
+            {withThem && (
+              <View style={styles.withRow}>
+                <View style={styles.withDot} />
+                <Text style={styles.withText}>With {requesterName} · stay close</Text>
+              </View>
+            )}
             <MessageBox incidentId={incident.id} userId={userId} />
             <View style={styles.dockButtons}>
               {me.status === 'notified' && (
@@ -450,7 +475,7 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
                 <Button label="I'm with them" variant="hero" tall style={{ flex: 1 }} loading={busy} onPress={() => setStatus('on_scene')} />
               )}
               <Button
-                label={num}
+                label={me.status === 'on_scene' || me.status === 'declined' ? `Call ${num}` : num}
                 variant="alert"
                 tall
                 style={{ flex: me.status === 'on_scene' || me.status === 'declined' ? 1 : 0.7 }}
@@ -463,6 +488,16 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
       </KeyboardAvoidingView>
     </View>
   );
+}
+
+/** The hero's own progress: alerted → on the way → with them. */
+function heroSteps(status: Responder['status'], name: string): { label: string; state: StepState }[] {
+  const here = status === 'on_scene';
+  return [
+    { label: 'Alerted', state: 'done' },
+    { label: 'On the way', state: here ? 'done' : 'now' },
+    { label: `With ${name}`, state: here ? 'now' : 'next' },
+  ];
 }
 
 /** The coordinator's latest note for one audience, without its prefix. */
@@ -626,6 +661,9 @@ const styles = StyleSheet.create({
   },
   dockButtons: { flexDirection: 'row', gap: space.sm },
   safeButton: { flex: 1, backgroundColor: 'transparent', borderColor: colors.safe },
+  withRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  withDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.safe },
+  withText: { color: '#3CCB7F', fontSize: 14, fontWeight: '800', letterSpacing: 0.3 },
   darkGhost: { borderColor: night.line, borderWidth: 1.5 },
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
   bubble: { padding: 12, borderRadius: 16, maxWidth: '88%', gap: 4 },
