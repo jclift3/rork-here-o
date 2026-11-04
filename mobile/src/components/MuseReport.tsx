@@ -27,7 +27,7 @@ export function TalkToHereO({ incidentId }: { incidentId: string }) {
           ? 'Sent. Hold again to add more.'
           : voice.state === 'error'
             ? 'Couldn’t send that. Try again, or type below.'
-            : 'Hold and tell HereO what’s happening';
+            : 'Hold to tell HereO what’s happening';
 
   const share = (source: 'camera' | 'library') => async () => {
     setSharing(true);
@@ -42,6 +42,10 @@ export function TalkToHereO({ incidentId }: { incidentId: string }) {
 
   return (
     <Panel>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Label>TALK TO HEREO</Label>
+        <ModelChip label="Muse Voice" />
+      </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Hold to talk to HereO"
@@ -53,8 +57,9 @@ export function TalkToHereO({ incidentId }: { incidentId: string }) {
         onPressOut={voice.stop}
         style={[styles.talk, voice.state === 'recording' && styles.talkActive]}>
         {voice.state === 'sending' ? <ActivityIndicator color={colors.paper} /> : <Mic color={colors.paper} size={24} />}
-        <Text style={styles.talkText}>{hint}</Text>
-        <ModelChip label="Muse Voice" />
+        <Text style={styles.talkText} numberOfLines={2}>
+          {hint}
+        </Text>
       </Pressable>
       {voice.transcript && <Text style={styles.transcript}>“{voice.transcript}”</Text>}
       <View style={styles.row}>

@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   GradientPanel,
   Label,
+  StatusBackdrop,
   LiveMap,
   ModelChip,
   night,
@@ -214,6 +215,7 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
             <Tracker steps={trackerSteps(bundle)} />
             <BriefCard bundle={bundle} />
             {active && <TalkToHereO incidentId={incident.id} />}
+            <SceneCard path={incident.scene_path ?? null} events={bundle.events} title="What helpers see" />
             {responders.length > 0 && (
               <Panel>
                 <Label>{active ? 'WHO KNOWS' : 'WHO WAS THERE'}</Label>
@@ -224,12 +226,12 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
             )}
             {active && <NeighboursComing incidentId={incident.id} />}
             <MuseCoordinator incidentId={incident.id} responders={responders} />
-            <SceneCard path={incident.scene_path ?? null} events={bundle.events} title="What you shared" />
             {!active && <ThankHelpers bundle={bundle} userId={userId} />}
             <Timeline bundle={bundle} userId={userId} />
             {active && <Button label="I pressed by mistake" variant="ghost" onPress={() => ask('cancelled')} />}
           </Sheet>
         </ScrollView>
+        <StatusBackdrop />
         {active && (
           <Dock>
             <MessageBox incidentId={incident.id} userId={userId} />
@@ -261,13 +263,14 @@ function trackerSteps({ incident, responders }: IncidentBundle): { label: string
   const going = responders.find((r) => r.status === 'en_route' || r.status === 'on_scene');
   const here = responders.some((r) => r.status === 'on_scene');
   const out: StepState = incident.dispatched_at || closed ? 'done' : 'now';
-  const ai: StepState = incident.brief || going || closed ? 'done' : out === 'done' ? 'now' : 'next';
-  const way: StepState = here || (closed && going) ? 'done' : going ? 'now' : ai === 'done' ? 'now' : 'next';
+  // The AI stays "on it" until a hero has actually accepted.
+  const ai: StepState = going || closed ? 'done' : out === 'done' ? 'now' : 'next';
+  const way: StepState = here || (closed && going) ? 'done' : going ? 'now' : 'next';
   const withYou: StepState = here ? (closed ? 'done' : 'now') : 'next';
   return [
     { label: 'Alert out', state: out },
-    { label: 'AI coordinating', state: ai },
-    { label: going ? `${firstName(going)} on the way` : 'Hero on the way', state: way },
+    { label: 'AI on it', state: ai },
+    { label: going ? `${firstName(going)} coming` : 'Hero coming', state: way },
     { label: 'With you', state: withYou },
   ];
 }
@@ -413,9 +416,9 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
             {active && incident.lat != null && (
               <Button
                 label="Walking directions"
-                variant="outline"
-                style={styles.darkOutline}
-                icon={<Navigation size={18} color={colors.ink} />}
+                variant="ghost"
+                style={styles.darkGhost}
+                icon={<Navigation size={18} color={night.muted} />}
                 onPress={directions}
               />
             )}
@@ -432,6 +435,7 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
             <Timeline bundle={bundle} userId={userId} />
           </Sheet>
         </ScrollView>
+        <StatusBackdrop />
         {active && me && (
           <Dock>
             <MessageBox incidentId={incident.id} userId={userId} />
@@ -439,7 +443,7 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
               {me.status === 'notified' && (
                 <>
                   <Button label="I'm on my way" variant="hero" tall style={{ flex: 2 }} loading={busy} onPress={() => setStatus('en_route')} />
-                  <Button label="Can't now" variant="outline" tall style={[{ flex: 1 }, styles.darkOutline]} onPress={() => setStatus('declined')} />
+                  <Button label="Can't now" variant="ghost" tall style={[{ flex: 1 }, styles.darkGhost]} onPress={() => setStatus('declined')} />
                 </>
               )}
               {me.status === 'en_route' && (
@@ -450,7 +454,7 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
                 variant="alert"
                 tall
                 style={{ flex: me.status === 'on_scene' || me.status === 'declined' ? 1 : 0.7 }}
-                icon={<Phone color={colors.paper} size={18} />}
+                icon={me.status === 'on_scene' || me.status === 'declined' ? <Phone color={colors.paper} size={18} /> : undefined}
                 onPress={() => call911(incident.id, userId, false, num)}
               />
             </View>
@@ -622,7 +626,7 @@ const styles = StyleSheet.create({
   },
   dockButtons: { flexDirection: 'row', gap: space.sm },
   safeButton: { flex: 1, backgroundColor: 'transparent', borderColor: colors.safe },
-  darkOutline: { backgroundColor: night.text, borderColor: night.text },
+  darkGhost: { borderColor: night.line, borderWidth: 1.5 },
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
   bubble: { padding: 12, borderRadius: 16, maxWidth: '88%', gap: 4 },
   mine: { alignSelf: 'flex-end', backgroundColor: colors.heroStart },

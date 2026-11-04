@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { ArrowLeft, Check } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, Text, useWindowDimensions, View, type StyleProp, type ViewStyle } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -28,8 +28,11 @@ export const MAP_HEIGHT = 300;
 /** Map across the top of the screen, with a pulsing pin where the person is. */
 export function LiveMap({ lat, lng, label, active }: { lat: number | null; lng: number | null; label: string; active: boolean }) {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  // About a quarter of the screen, so the brief stays above the fold on small phones.
+  const mapHeight = Math.round(Math.min(MAP_HEIGHT, height * 0.26));
   return (
-    <View style={[styles.mapWrap, { height: MAP_HEIGHT + insets.top }]}>
+    <View style={[styles.mapWrap, { height: mapHeight + insets.top }]}>
       {lat != null && lng != null ? (
         <MapView
           style={StyleSheet.absoluteFill}
@@ -90,6 +93,12 @@ function PulsePin({ active }: { active: boolean }) {
       <View style={[styles.pinDot, { backgroundColor: color }]} />
     </View>
   );
+}
+
+/** Keeps scrolled content from running under the clock and the Dynamic Island. */
+export function StatusBackdrop() {
+  const insets = useSafeAreaInsets();
+  return <View pointerEvents="none" style={[styles.statusBackdrop, { height: insets.top }]} />;
 }
 
 /** The dark sheet that overlaps the bottom of the map. */
@@ -223,6 +232,7 @@ export const night_styles = StyleSheet.create({
 const styles = StyleSheet.create({
   mapWrap: { width: '100%', backgroundColor: night.bg },
   mapShade: { position: 'absolute', top: 0, left: 0, right: 0 },
+  statusBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: 'rgba(11,11,15,0.94)' },
   back: {
     position: 'absolute',
     left: space.md,
@@ -265,7 +275,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   trackerLine: { flex: 1, height: 2, backgroundColor: night.line, marginHorizontal: 4 },
-  trackerText: { fontSize: 12, lineHeight: 15, fontWeight: '700', color: night.muted, paddingRight: 6 },
+  trackerText: { fontSize: 11, lineHeight: 14, fontWeight: '700', color: night.muted, paddingRight: 4 },
   person: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   avatarRing: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
   avatar: {

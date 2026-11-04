@@ -47,8 +47,8 @@ export function MuseCoordinator({ incidentId, responders }: { incidentId: string
         {rows.length > 4 && (open ? <ChevronUp size={18} color={night.muted} /> : <ChevronDown size={18} color={night.muted} />)}
       </Pressable>
       <View style={{ gap: space.md }}>
-        {shown.map((d) => (
-          <Row key={d.id} d={d} name={(id) => names.get(id)} />
+        {shown.map((d, i) => (
+          <Row key={d.id} d={d} name={(id) => names.get(id)} chip={i === 0 || chipOf(d) !== chipOf(shown[i - 1])} />
         ))}
       </View>
       <Text style={styles.foot}>
@@ -59,7 +59,9 @@ export function MuseCoordinator({ incidentId, responders }: { incidentId: string
   );
 }
 
-function Row({ d, name }: { d: AgentDecision; name: (id: string) => string | undefined }) {
+const chipOf = (d: AgentDecision) => (d.tool.startsWith('guard:') ? 'Safety rules' : modelName(d.model));
+
+function Row({ d, name, chip }: { d: AgentDecision; name: (id: string) => string | undefined; chip: boolean }) {
   const v = VERDICT[d.verdict];
   const rule = d.tool.startsWith('guard:');
   return (
@@ -68,7 +70,7 @@ function Row({ d, name }: { d: AgentDecision; name: (id: string) => string | und
         <v.Icon size={12} color={v.color} strokeWidth={3} />
       </View>
       <View style={{ flex: 1, gap: 4 }}>
-        <ModelChip label={rule ? 'Safety rules' : modelName(d.model)} tone={rule ? 'rules' : d.verdict === 'blocked' ? 'alert' : 'meta'} />
+        {chip && <ModelChip label={chipOf(d)} tone={rule ? 'rules' : d.verdict === 'blocked' ? 'alert' : 'meta'} />}
         <Text style={styles.text}>{describeDecision(d, name)}</Text>
         {d.verdict !== 'allowed' && d.reason && <Text style={[styles.reason, { color: v.color }]}>{d.reason}</Text>}
       </View>
