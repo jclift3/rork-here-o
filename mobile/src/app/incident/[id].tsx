@@ -269,15 +269,21 @@ function firstName(r: Responder) {
 }
 
 /** Alert out → AI coordinating → hero on the way → with you. */
-function trackerSteps({ incident, responders }: IncidentBundle): { label: string; state: StepState }[] {
+function trackerSteps({ incident, responders, events }: IncidentBundle): { label: string; state: StepState }[] {
   const closed = incident.status !== 'active';
-  const going = responders.find((r) => r.status === 'en_route' || r.status === 'on_scene');
-  const here = responders.some((r) => r.status === 'on_scene');
+  // Everyone is "released" once the request closes, so read who set out or arrived from the timeline.
+  const acted = (s: string) => new Set(events.filter((e) => e.kind === 'status' && e.body === s).map((e) => e.actor_id));
+  const set = acted('en_route');
+  const came = acted('on_scene');
+  const going =
+    responders.find((r) => r.status === 'en_route' || r.status === 'on_scene') ??
+    responders.find((r) => set.has(r.user_id) || came.has(r.user_id));
+  const here = responders.some((r) => r.status === 'on_scene' || (closed && came.has(r.user_id)));
   const out: StepState = incident.dispatched_at || closed ? 'done' : 'now';
   // The AI stays "on it" until a hero has actually accepted.
   const ai: StepState = going || closed ? 'done' : out === 'done' ? 'now' : 'next';
   const way: StepState = here || (closed && going) ? 'done' : going ? 'now' : 'next';
-  const withYou: StepState = here ? (closed ? 'done' : 'now') : 'next';
+  const withYou: StepState = here ? (closed ? 'done' : 'now') : closed && incident.status === 'resolved' && going ? 'done' : 'next';
   return [
     { label: 'Alert out', state: out },
     { label: 'AI on it', state: ai },
