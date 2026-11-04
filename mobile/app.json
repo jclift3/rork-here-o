@@ -79,7 +79,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": false,
+          "microphonePermission": "HereO records a few seconds of what you say when you ask it to, so the people helping you know what's happening. Recordings are transcribed and not kept.",
           "enableBackgroundPlayback": true
         }
       ],
@@ -99,6 +99,14 @@
               ]
             }
           ]
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "HereO lets you share a photo of where you are with the people helping you. Faces and number plates are blurred first.",
+          "cameraPermission": "HereO lets you take a photo of where you are for the people helping you. Faces and number plates are blurred first.",
+          "microphonePermission": false
         }
       ]
     ],
