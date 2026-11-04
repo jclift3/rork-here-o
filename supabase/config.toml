@@ -38,3 +38,17 @@ import_map = "./functions/deno.json"
 [functions.sign-up]
 verify_jwt = false
 import_map = "./functions/deno.json"
+
+# Meta hackathon (Nov 2026): Muse Dispatcher.
+[functions.muse-voice]
+verify_jwt = true
+import_map = "./functions/deno.json"
+
+[functions.muse-scene]
+verify_jwt = true
+import_map = "./functions/deno.json"
+
+# Run from SQL with the check-ins Vault secret, not by the app.
+[functions.muse-eval]
+verify_jwt = false
+import_map = "./functions/deno.json"
