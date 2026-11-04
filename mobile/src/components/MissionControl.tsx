@@ -10,14 +10,15 @@ import { Animated, Easing, Pressable, StyleSheet, Text, useWindowDimensions, Vie
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Glass } from '@/components/Glass';
 import { colors, fonts, heroGradient, space } from '@/lib/theme';
 
 /** Dark palette for the live screen only; the rest of the app stays light. */
 export const night = {
   bg: '#0B0B0F',
-  card: '#16161D',
-  raised: '#1E1E27',
-  line: '#2A2A35',
+  card: 'rgba(255,255,255,0.06)',
+  raised: 'rgba(255,255,255,0.12)',
+  line: 'rgba(255,255,255,0.16)',
   text: '#FFFFFF',
   muted: '#9C9CAA',
   faint: '#5E5E6B',
@@ -48,7 +49,7 @@ export function LiveMap({ lat, lng, label, active }: { lat: number | null; lng: 
           </Marker>
         </MapView>
       ) : (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: night.card }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: '#16161D' }]} />
       )}
       <LinearGradient
         pointerEvents="none"
@@ -61,7 +62,9 @@ export function LiveMap({ lat, lng, label, active }: { lat: number | null; lng: 
         hitSlop={12}
         onPress={() => (router.canGoBack() ? router.back() : router.replace('/home'))}
         style={[styles.back, { top: insets.top + 8 }]}>
-        <ArrowLeft color={night.text} size={22} />
+        <Glass radius={22} style={styles.backGlass} interactive>
+          <ArrowLeft color={night.text} size={22} />
+        </Glass>
       </Pressable>
     </View>
   );
@@ -110,7 +113,10 @@ export function Sheet({ children }: { children: ReactNode }) {
 
 export function Panel({ children, style, accent }: { children: ReactNode; style?: StyleProp<ViewStyle>; accent?: string }) {
   return (
-    <View style={[styles.panel, accent && { borderLeftWidth: 4, borderLeftColor: accent }, style]}>{children}</View>
+    <Glass style={[styles.panel, style]}>
+      {accent && <View style={[styles.accent, { backgroundColor: accent }]} />}
+      {children}
+    </Glass>
   );
 }
 
@@ -224,7 +230,15 @@ export function walkTime(m: number | null | undefined): string | null {
 }
 
 export const night_styles = StyleSheet.create({
-  headline: { fontFamily: fonts.display, fontSize: 32, lineHeight: 38, color: night.text, letterSpacing: -0.5 },
+  headline: {
+    fontFamily: fonts.display,
+    fontSize: 34,
+    lineHeight: 40,
+    color: night.text,
+    letterSpacing: -0.6,
+    textShadowColor: 'rgba(232,51,139,0.45)',
+    textShadowRadius: 18,
+  },
   sub: { fontSize: 15, lineHeight: 21, color: night.muted },
   big: { fontSize: 20, lineHeight: 28, color: night.text, fontFamily: fonts.displayMedium },
   body: { fontSize: 16, lineHeight: 23, color: night.text },
@@ -234,17 +248,9 @@ export const night_styles = StyleSheet.create({
 const styles = StyleSheet.create({
   mapWrap: { width: '100%', backgroundColor: night.bg },
   mapShade: { position: 'absolute', top: 0, left: 0, right: 0 },
-  statusBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: night.bg },
-  back: {
-    position: 'absolute',
-    left: space.md,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(11,11,15,0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  statusBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: '#07070B' },
+  back: { position: 'absolute', left: space.md, width: 44, height: 44 },
+  backGlass: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   pinBox: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center' },
   pinRing: { position: 'absolute', width: 72, height: 72, borderRadius: 36, borderWidth: 3 },
   pinDot: { width: 20, height: 20, borderRadius: 10, borderWidth: 3, borderColor: night.text },
@@ -252,15 +258,23 @@ const styles = StyleSheet.create({
     marginTop: -28,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    backgroundColor: night.bg,
-    paddingHorizontal: space.lg,
+    backgroundColor: 'rgba(7,7,11,0.35)',
+    paddingHorizontal: space.md,
     paddingTop: space.lg,
     paddingBottom: space.xl,
     gap: space.md,
   },
-  panel: { backgroundColor: night.card, borderRadius: 18, padding: space.md, gap: space.sm },
-  gradientFrame: { borderRadius: 20, padding: 2 },
-  gradientInner: { backgroundColor: night.card, borderRadius: 18, padding: space.md, gap: space.sm },
+  panel: { padding: space.md, gap: space.sm },
+  accent: { position: 'absolute', left: 0, top: 18, bottom: 18, width: 3, borderRadius: 2 },
+  gradientFrame: {
+    borderRadius: 26,
+    padding: 2,
+    shadowColor: colors.heroStart,
+    shadowOpacity: 0.55,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  gradientInner: { backgroundColor: 'rgba(14,10,18,0.86)', borderRadius: 24, padding: space.md, gap: space.sm },
   label: { fontSize: 12, fontWeight: '800', letterSpacing: 1.4 },
   chip: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
   chipText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.4 },

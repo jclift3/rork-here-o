@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Alert, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Aurora, Glass } from '@/components/Glass';
+import { Mascot } from '@/components/Mascot';
 import {
   GradientPanel,
   Label,
@@ -23,7 +25,7 @@ import {
 import { modelName, MuseCoordinator } from '@/components/MuseCoordinator';
 import { SceneCard, TalkToHereO } from '@/components/MuseReport';
 import { AlarmOverlay, PinSheet } from '@/components/RingAlarm';
-import { Body, Button, Screen, Title } from '@/components/ui';
+import { Body, Button, Screen } from '@/components/ui';
 import {
   call911,
   closeIncident,
@@ -189,6 +191,7 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
 
   return (
     <View style={styles.root}>
+      <Aurora calm />
       <ScrollToTopWhen when={arrived || !active} scrollRef={raeScroll} />
       <StatusBar style="light" />
       {active && flow.incidentId === incident.id && (
@@ -294,22 +297,33 @@ function trackerSteps({ incident, responders, events }: IncidentBundle): { label
 
 function Dock({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets();
-  return <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom, space.md) }]}>{children}</View>;
+  return (
+    <View style={{ paddingHorizontal: space.sm, paddingBottom: Math.max(insets.bottom - 6, space.sm) }}>
+      <Glass radius={30} style={styles.dock}>
+        {children}
+      </Glass>
+    </View>
+  );
 }
 
 /** What she sees after ending her request, with her PIN or her duress PIN alike. */
 function SafeNow({ cancelled }: { cancelled: boolean }) {
   useEffect(() => disarmRing(), []);
   return (
-    <Screen>
-      <Title style={{ color: colors.safe }}>{cancelled ? 'Alert cancelled' : 'You’re safe'}</Title>
-      <Body>
-        {cancelled
-          ? 'Anyone who was alerted has been told it was a mistake.'
-          : 'Everyone who was helping has been told they can stand down.'}
-      </Body>
-      <Button label="Done" variant="primary" onPress={() => router.replace('/home')} />
-    </Screen>
+    <View style={[styles.root, { justifyContent: 'center', padding: space.lg }]}>
+      <Aurora />
+      <StatusBar style="light" />
+      <Glass radius={32} style={{ padding: space.lg, gap: space.md, alignItems: 'center' }}>
+        <Mascot size={120} radius={28} />
+        <Text style={[night_styles.headline, { textAlign: 'center' }]}>{cancelled ? 'Alert cancelled' : 'You’re safe'}</Text>
+        <Text style={[night_styles.sub, { textAlign: 'center' }]}>
+          {cancelled
+            ? 'Anyone who was alerted has been told it was a mistake.'
+            : 'Everyone who was helping has been told they can stand down.'}
+        </Text>
+        <Button label="Done" variant="hero" style={{ alignSelf: 'stretch' }} onPress={() => router.replace('/home')} />
+      </Glass>
+    </View>
   );
 }
 
@@ -385,6 +399,7 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
 
   return (
     <View style={styles.root}>
+      <Aurora calm />
       <StatusBar style="light" />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollToTopWhen when={withThem || !active} scrollRef={niaScroll} />
@@ -656,15 +671,8 @@ function ThankHelpers({ bundle, userId }: { bundle: IncidentBundle; userId: stri
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: night.bg },
-  dock: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: night.line,
-    paddingHorizontal: space.md,
-    paddingTop: space.md,
-    gap: space.sm,
-    backgroundColor: night.card,
-  },
+  root: { flex: 1, backgroundColor: '#07070B' },
+  dock: { padding: space.sm + 4, gap: space.sm },
   dockButtons: { flexDirection: 'row', gap: space.sm },
   safeButton: { flex: 1, backgroundColor: 'transparent', borderColor: colors.safe },
   withRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -683,12 +691,12 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1.5,
     borderColor: night.line,
-    backgroundColor: night.bg,
-    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    borderRadius: 22,
     minHeight: 48,
     paddingHorizontal: 14,
     fontSize: 16,
     color: night.text,
   },
-  sendButton: { width: 48, height: 48, backgroundColor: night.raised, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
+  sendButton: { width: 48, height: 48, backgroundColor: night.raised, alignItems: 'center', justifyContent: 'center', borderRadius: 24 },
 });

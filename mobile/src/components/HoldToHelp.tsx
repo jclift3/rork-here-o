@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -21,13 +21,28 @@ export function HoldToHelp({
   onComplete,
   onTap,
   label = true,
+  glow = false,
 }: {
   size?: number;
   onComplete: () => void;
   onTap?: () => void;
   label?: boolean;
+  /** A breathing brand-colour halo, for the big button on dark screens. */
+  glow?: boolean;
 }) {
   const [progress] = useState(() => new Animated.Value(0));
+  const [breath] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    if (!glow) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(breath, { toValue: 1, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(breath, { toValue: 0, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [glow, breath]);
   const pressedAt = useRef(0);
   const done = useRef(false);
   const ticker = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -77,12 +92,30 @@ export function HoldToHelp({
       onPressIn={onPressIn}
       onPressOut={onPressOut}
       style={{ width: size, height: size }}>
+      {glow && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.halo,
+            {
+              width: size * 1.5,
+              height: size * 1.5,
+              borderRadius: size,
+              left: -size * 0.25,
+              top: -size * 0.25,
+              opacity: breath.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.75] }),
+              transform: [{ scale: breath.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.06] }) }],
+            },
+          ]}>
+          <LinearGradient colors={[colors.heroStart, colors.heroEnd]} style={{ flex: 1, borderRadius: size, opacity: 0.35 }} />
+        </Animated.View>
+      )}
       <View style={StyleSheet.absoluteFill}>
         <LinearGradient
           colors={heroGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.core, { margin: stroke * 1.6, borderRadius: size }]}>
+          style={[styles.core, { margin: stroke * 1.6, borderRadius: size }, glow && styles.coreGlow]}>
           {label ? (
             <>
               <Text style={[styles.big, { fontSize: size * 0.13 }]}>HOLD</Text>
@@ -94,12 +127,12 @@ export function HoldToHelp({
         </LinearGradient>
       </View>
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke={colors.line} strokeWidth={stroke} fill="none" />
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={glow ? 'rgba(255,255,255,0.18)' : colors.line} strokeWidth={stroke} fill="none" />
         <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={colors.ink}
+          stroke={glow ? colors.paper : colors.ink}
           strokeWidth={stroke}
           strokeLinecap="round"
           fill="none"
@@ -114,6 +147,8 @@ export function HoldToHelp({
 
 const styles = StyleSheet.create({
   core: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  coreGlow: { shadowColor: colors.heroStart, shadowOpacity: 0.9, shadowRadius: 30, shadowOffset: { width: 0, height: 0 } },
+  halo: { position: 'absolute', shadowColor: colors.heroEnd, shadowOpacity: 0.8, shadowRadius: 40 },
   big: { color: colors.paper, fontFamily: fonts.display, letterSpacing: 1 },
   small: { color: colors.paper, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
 });

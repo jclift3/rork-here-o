@@ -4,6 +4,7 @@ import { Compass, House, MessageCircle, User } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Glass } from './Glass';
 import { HoldToHelp } from './HoldToHelp';
 import { raiseAlert } from '@/lib/incidents';
 import { useMode } from '@/lib/mode';
@@ -32,9 +33,9 @@ export function HelpTabBar({ state, navigation }: BottomTabBarProps) {
     }
   };
 
-  return (
-    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-      {state.routes.map((route, index) => {
+  // Home is dark glass over the aurora, so its bar floats as a glass capsule.
+  const dark = state.routes[state.index]?.name === 'home';
+  const tabs = state.routes.map((route, index) => {
         const focused = state.index === index;
         if (route.name === 'help') {
           return (
@@ -57,13 +58,25 @@ export function HelpTabBar({ state, navigation }: BottomTabBarProps) {
               if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
             }}
             style={styles.tab}>
-            <Icon size={26} strokeWidth={focused ? 2.4 : 1.6} color={focused ? colors.ink : colors.muted} />
-            <Text style={[styles.label, { color: focused ? colors.ink : colors.muted }]}>{LABELS[name]}</Text>
+            <Icon size={26} strokeWidth={focused ? 2.4 : 1.6} color={tint(focused)} />
+            <Text style={[styles.label, { color: tint(focused) }]}>{LABELS[name]}</Text>
           </Pressable>
         );
-      })}
-    </View>
-  );
+      });
+  function tint(focused: boolean) {
+    if (dark) return focused ? colors.paper : 'rgba(255,255,255,0.55)';
+    return focused ? colors.ink : colors.muted;
+  }
+  if (dark) {
+    return (
+      <View style={[styles.floating, { bottom: Math.max(insets.bottom - 8, 8) }]} pointerEvents="box-none">
+        <Glass radius={34} style={styles.capsule}>
+          {tabs}
+        </Glass>
+      </View>
+    );
+  }
+  return <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>{tabs}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -78,4 +91,6 @@ const styles = StyleSheet.create({
   tab: { flex: 1, alignItems: 'center', gap: 2, minHeight: 48, justifyContent: 'center' },
   label: { fontSize: 11, fontWeight: '600' },
   center: { flex: 1, alignItems: 'center', marginTop: -28 },
+  floating: { position: 'absolute', left: 12, right: 12 },
+  capsule: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, overflow: 'visible' },
 });
