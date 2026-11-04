@@ -86,8 +86,10 @@ Deno.serve(async (req) => {
   }
 
   // Muse Spark reads the BLURRED photo only.
+  // Image reading with structured output takes longer than a text turn; the
+  // alert has long gone out, so give it room (10 s timed out in the demo run).
   const vision = await sparkChat({
-    timeoutMs: 10_000,
+    timeoutMs: 25_000,
     // "low" spent the whole token budget on hidden reasoning and returned no JSON.
     reasoning: "minimal",
     maxTokens: 600,
