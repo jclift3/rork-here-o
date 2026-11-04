@@ -52,3 +52,7 @@ import_map = "./functions/deno.json"
 [functions.muse-eval]
 verify_jwt = false
 import_map = "./functions/deno.json"
+
+# Latency probe for the Meta Model API; Vault-secret auth, called from SQL.
+[functions.muse-probe]
+verify_jwt = false

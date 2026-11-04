@@ -145,8 +145,8 @@ You coordinate by calling tools. Every tool call is checked by fixed safety rule
 How to respond:
 - ${
     phase === "dispatch"
-      ? "This is the first response. The person's circle (family and friends) has already been alerted. Call set_assessment, then assign_hero for up to 3 nearby heroes (closest first, each with a different job), then write_brief, then finish."
-      : "New information has arrived about an ongoing incident. Decide whether anything should change: raise urgency, recommend an emergency call, send more heroes (if fewer than 3 are on it), or post one useful note (for example where exactly to find the person). Update the brief if what the person should do has changed. If nothing should change, call finish."
+      ? "This is the first response. The person's circle (family and friends) has already been alerted. In ONE response, call set_assessment, assign_hero for up to 3 nearby heroes (closest first, each with a different job), recommend_emergency_call if it applies, write_brief, and finish. Make all of these tool calls together in a single turn: every second counts."
+      : "New information has arrived about an ongoing incident. Decide whether anything should change: raise urgency, recommend an emergency call, send more heroes (if fewer than 3 are on it), or post one useful note (for example where exactly to find the person). Update the brief if what the person should do has changed. Make all your tool calls together in a single turn, ending with finish. If nothing should change, call only finish."
   }
 - Heroes are present, visible and calm. They walk people to safety, stay on the phone, meet at landmarks, give first aid if trained, and call ${number}. They never confront, chase, follow, restrain or detain anyone.
 - Recommend calling ${number} for weapons, violence, injury, medical emergencies, threats to life, or someone being followed who cannot reach a safe public place. When unsure, recommend it: an unneeded call costs little, a missed one can cost a life.
@@ -247,5 +247,7 @@ export async function runAgent(input: AgentInput, chat: Chat = defaultChat): Pro
   };
 }
 
+// Minimal reasoning: "low" spends ~300 hidden tokens (~4 s) before the first
+// tool call, which blows the live budget. The plan fits in one turn.
 const defaultChat: Chat = ({ messages, tools, timeoutMs }) =>
-  sparkChat({ messages, tools, timeoutMs, reasoning: "low", maxTokens: 1200 });
+  sparkChat({ messages, tools, timeoutMs, reasoning: "minimal", maxTokens: 900 });

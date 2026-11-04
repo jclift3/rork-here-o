@@ -32,6 +32,9 @@ import type { GuardianCandidate, Incident, Triage } from "./types.ts";
 const SEARCH_RADIUS_M = 1500;
 const CANDIDATE_LIMIT = 6;
 const TRIAGE_TIMEOUT_MS = 8000;
+// The circle is already alerted; heroes can wait a few seconds for a better plan.
+// Muse Spark answers one full-plan turn in about 4 to 6 s.
+const AGENT_BUDGET_MS = 10_000;
 
 export type DispatchResult =
   | { status: "already_dispatched_or_closed" }
@@ -213,7 +216,7 @@ async function sendGuardians(
       scenes: [],
       messages: [],
       fallbackBrief: fallbackTriage(incident, candidates, requesterName).summary,
-      budgetMs: TRIAGE_TIMEOUT_MS,
+      budgetMs: AGENT_BUDGET_MS,
     });
     await recordDecisions(db, incident.id, "dispatch", out);
     await postNotes(db, incident.id, out);

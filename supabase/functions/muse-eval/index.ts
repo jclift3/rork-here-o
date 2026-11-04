@@ -7,7 +7,7 @@
 
 import { adminClient, json } from "../_shared/http.ts";
 import { runAgent } from "../_shared/muse/agent.ts";
-import { SPARK_MODEL } from "../_shared/muse/client.ts";
+import { META_BASE, metaKey, SPARK_MODEL } from "../_shared/muse/client.ts";
 import { URGENCY_ORDER } from "../_shared/muse/guard.ts";
 import { PLACES, type Scenario, SCENARIOS } from "../_shared/muse/scenarios.ts";
 import type { GuardianCandidate } from "../_shared/types.ts";
@@ -44,6 +44,41 @@ const HEROES: GuardianCandidate[] = [
   },
 ];
 
+let BUDGET_MS = 20_000;
+
+/** One tiny call with no tools, to see whether the Meta API answers at all and how fast. */
+async function probe(reasoning: string, timeoutMs: number) {
+  const started = Date.now();
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${META_BASE}/chat/completions`, {
+      method: "POST",
+      signal: ctl.signal,
+      headers: { "Authorization": `Bearer ${metaKey() ?? ""}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: SPARK_MODEL,
+        messages: [{ role: "user", content: "Reply with the word ok." }],
+        reasoning_effort: reasoning,
+        max_completion_tokens: 50,
+      }),
+    });
+    const headersMs = Date.now() - started;
+    const text = await res.text();
+    return {
+      reasoning,
+      status: res.status,
+      headers_ms: headersMs,
+      total_ms: Date.now() - started,
+      body: text.slice(0, 400),
+    };
+  } catch (err) {
+    return { reasoning, error: err instanceof Error ? err.message : String(err), total_ms: Date.now() - started };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function runOne(s: Scenario) {
   const place = PLACES[s.where];
   const out = await runAgent({
@@ -56,9 +91,10 @@ async function runOne(s: Scenario) {
     scenes: s.scenes ?? [],
     messages: s.messages ?? [],
     fallbackBrief: "Your circle has been alerted.",
-    budgetMs: 20_000,
+    budgetMs: BUDGET_MS,
   });
-  const modelCalledEmergency = out.decisions.some((d) => d.tool === "recommend_emergency_call");
+  // Only count what the model itself chose; guard-added steps are not the model.
+  const modelCalledEmergency = out.modelAnswered && out.decisions.some((d) => d.tool === "recommend_emergency_call");
   const assessed = out.decisions.find((d) => d.tool === "set_assessment");
   const modelUrgency = URGENCY_ORDER.includes(assessed?.args.urgency as never)
     ? assessed!.args.urgency as string
@@ -103,13 +139,24 @@ Deno.serve(async (req) => {
     return json({ error: "forbidden" }, 403);
   }
   const body = await req.json().catch(() => ({}));
+  if (body?.probe) {
+    const timeout = Number(body.timeout_ms) || 60_000;
+    return json({
+      base: META_BASE,
+      model: SPARK_MODEL,
+      key_prefix: (metaKey() ?? "").slice(0, 4),
+      results: await Promise.all(["minimal", "low"].map((r) => probe(r, timeout))),
+    });
+  }
+  if (Number(body?.budget_ms) > 0) BUDGET_MS = Math.min(Number(body.budget_ms), 60_000);
+  const batch = Math.max(1, Math.min(Number(body?.concurrency) || 4, 8));
   const only: string[] | null = Array.isArray(body?.only) ? body.only : null;
   const list = only ? SCENARIOS.filter((s) => only.includes(s.id)) : SCENARIOS;
 
   // Four at a time to stay well inside rate limits.
   const results: Awaited<ReturnType<typeof runOne>>[] = [];
-  for (let i = 0; i < list.length; i += 4) {
-    results.push(...await Promise.all(list.slice(i, i + 4).map(runOne)));
+  for (let i = 0; i < list.length; i += batch) {
+    results.push(...await Promise.all(list.slice(i, i + batch).map(runOne)));
   }
   const expected = results.filter((r) => r.expect_emergency);
   const recall = expected.length ? expected.filter((r) => r.model_called_emergency).length / expected.length : 1;
