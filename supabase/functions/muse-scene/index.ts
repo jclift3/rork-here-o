@@ -88,8 +88,9 @@ Deno.serve(async (req) => {
   // Muse Spark reads the BLURRED photo only.
   const vision = await sparkChat({
     timeoutMs: 10_000,
-    reasoning: "low",
-    maxTokens: 400,
+    // "low" spent the whole token budget on hidden reasoning and returned no JSON.
+    reasoning: "minimal",
+    maxTokens: 600,
     json: { name: "scene", schema: SCENE_SCHEMA },
     messages: [
       { role: "system", content: SCENE_SYSTEM },
@@ -111,7 +112,7 @@ Deno.serve(async (req) => {
   } catch {
     place = (vision?.message.content ?? "").trim();
   }
-  const description = (place || "Photo shared (faces and plates blurred).").slice(0, 600);
+  const description = (place || "Photo of where they are.").slice(0, 600);
 
   await db.from("incidents").update({ scene_path: path }).eq("id", incidentId);
   await db.from("incident_events").insert({

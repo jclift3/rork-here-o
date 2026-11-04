@@ -264,6 +264,16 @@ export class ResponseGuard {
         this.record("guard:presence_floor", { user_id: nearest.user_id }, "changed", "a hero was nearby and none sent");
       }
     }
+    if (!this.state.brief && opts.phase === "reassess") {
+      // Nothing new to tell her: keep the brief she already has, unless the
+      // call advice changed and it doesn't mention the number yet.
+      this.state.brief = opts.fallbackBrief;
+      if (this.state.emergencyRecommended && !opts.fallbackBrief.includes(this.number)) {
+        this.state.brief += ` If you are in danger, call ${this.number} now.`;
+        this.step++;
+        this.record("guard:brief_fallback", {}, "changed", "added the emergency number to the brief");
+      }
+    }
     if (!this.state.brief) {
       let text = opts.fallbackBrief;
       if (this.state.emergencyRecommended && !text.includes(this.number)) {

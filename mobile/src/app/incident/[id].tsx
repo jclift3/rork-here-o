@@ -166,6 +166,7 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       {active && flow.incidentId === incident.id && (
         <AlarmOverlay
+          emergencyNumber={num}
           onCall911={() => call911(incident.id, userId, true, num)}
           onImOk={() => ask('resolved')}
           onCancelWindow={cancelWindow}

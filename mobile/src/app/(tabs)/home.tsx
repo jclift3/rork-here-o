@@ -68,9 +68,13 @@ export default function Home() {
     }
   }, [userId, mode]);
 
+  // Refresh while the screen is open so a new hero alert shows up even when a
+  // push can't arrive (simulators, notifications off).
   useFocusEffect(
     useCallback(() => {
       load();
+      const timer = setInterval(load, 10_000);
+      return () => clearInterval(timer);
     }, [load]),
   );
 

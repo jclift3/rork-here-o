@@ -17,7 +17,9 @@ export function AlarmOverlay({
   onImOk,
   onCancelWindow,
   onHide,
+  emergencyNumber = '911',
 }: {
+  emergencyNumber?: string;
   onCall911: () => void;
   onImOk: () => void;
   onCancelWindow: () => void;
@@ -65,7 +67,7 @@ export function AlarmOverlay({
             ) : (
               <>
                 <Button
-                  label="Call 911"
+                  label={`Call ${emergencyNumber}`}
                   variant="alert"
                   tall
                   icon={<Phone color={colors.paper} size={20} />}
