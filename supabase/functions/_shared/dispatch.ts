@@ -14,6 +14,9 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { askJson } from "./claude.ts";
+import { runAgent } from "./muse/agent.ts";
+import { metaKey } from "./muse/client.ts";
+import { postNotes, recordDecisions, toTriage } from "./muse/respond.ts";
 import { buildPushMessages, sendPush } from "./push.ts";
 import {
   buildTriagePrompt,
@@ -197,13 +200,34 @@ async function sendGuardians(
     candidates = (data ?? []) as GuardianCandidate[];
   }
 
-  const raw = await askJson({
-    system: TRIAGE_SYSTEM,
-    user: buildTriagePrompt(incident, candidates, circleNames),
-    schema: TRIAGE_SCHEMA,
-    timeoutMs: TRIAGE_TIMEOUT_MS,
-  });
-  const aiTriage = finalizeTriage(raw, incident, candidates, requesterName);
+  let aiTriage: Triage | null = null;
+  if (metaKey()) {
+    // Muse Dispatcher (Meta hackathon): a Muse Spark agent with guarded tools.
+    const out = await runAgent({
+      phase: "dispatch",
+      incident,
+      requesterName,
+      candidates,
+      responding: circleNames.map((n) => ({ first_name: firstName(n), kind: "circle", status: "notified", job: null })),
+      transcripts: [],
+      scenes: [],
+      messages: [],
+      fallbackBrief: fallbackTriage(incident, candidates, requesterName).summary,
+      budgetMs: TRIAGE_TIMEOUT_MS,
+    });
+    await recordDecisions(db, incident.id, "dispatch", out);
+    await postNotes(db, incident.id, out);
+    await db.from("incidents").update({ agent_model: out.model }).eq("id", incident.id);
+    if (out.modelAnswered) aiTriage = toTriage(out);
+  } else {
+    const raw = await askJson({
+      system: TRIAGE_SYSTEM,
+      user: buildTriagePrompt(incident, candidates, circleNames),
+      schema: TRIAGE_SCHEMA,
+      timeoutMs: TRIAGE_TIMEOUT_MS,
+    });
+    aiTriage = finalizeTriage(raw, incident, candidates, requesterName);
+  }
   const triage: Triage = aiTriage ?? fallbackTriage(incident, candidates, requesterName);
 
   const byId = new Map(candidates.map((c) => [c.user_id, c]));

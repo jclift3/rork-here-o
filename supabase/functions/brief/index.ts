@@ -4,6 +4,8 @@
 
 import { BRIEF_SCHEMA, BRIEF_SYSTEM, buildBriefPrompt, composeBrief } from "../_shared/brief.ts";
 import { askJson } from "../_shared/claude.ts";
+import { metaKey } from "../_shared/muse/client.ts";
+import { reassessIncident } from "../_shared/muse/respond.ts";
 import { adminClient, callerFrom, corsHeaders, json, readIncidentId } from "../_shared/http.ts";
 import { describesImmediateDanger } from "../_shared/safety.ts";
 import type { EventView, Incident, ResponderView } from "../_shared/types.ts";
@@ -45,6 +47,13 @@ Deno.serve(async (req) => {
   }
   // Claim the refresh window before the slow call so concurrent callers skip.
   await db.from("incidents").update({ brief_at: new Date().toISOString() }).eq("id", incidentId);
+
+  // Muse Dispatcher (Meta hackathon): the agent reassesses instead of only
+  // rewriting the brief, so a new message can also escalate or add heroes.
+  if (metaKey()) {
+    const result = await reassessIncident(db, incidentId);
+    return json({ status: "updated", source: "muse", result });
+  }
 
   const { data: requester } = await db.from("profiles").select("display_name").eq("id", incident.requester_id).single();
   const requesterName = requester?.display_name || "Someone";
