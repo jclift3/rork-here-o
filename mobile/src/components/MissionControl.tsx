@@ -36,7 +36,9 @@ export function LiveMap({ lat, lng, label, active }: { lat: number | null; lng: 
       {lat != null && lng != null ? (
         <MapView
           style={StyleSheet.absoluteFill}
-          region={{ latitude: lat - 0.0009, longitude: lng, latitudeDelta: 0.006, longitudeDelta: 0.006 }}
+          region={{ latitude: lat, longitude: lng, latitudeDelta: 0.005, longitudeDelta: 0.005 }}
+          // Centre the pin in the strip you can see: below the status bar, above the sheet.
+          mapPadding={{ top: insets.top, right: 0, bottom: 28, left: 0 }}
           userInterfaceStyle="dark"
           pitchEnabled={false}
           rotateEnabled={false}
@@ -232,7 +234,7 @@ export const night_styles = StyleSheet.create({
 const styles = StyleSheet.create({
   mapWrap: { width: '100%', backgroundColor: night.bg },
   mapShade: { position: 'absolute', top: 0, left: 0, right: 0 },
-  statusBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: 'rgba(11,11,15,0.94)' },
+  statusBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: night.bg },
   back: {
     position: 'absolute',
     left: space.md,

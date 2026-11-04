@@ -52,12 +52,16 @@ export function MuseCoordinator({ incidentId, responders }: { incidentId: string
         ))}
       </View>
       <Text style={styles.foot}>
-        {rows.length} steps{ms ? ` · planned in ${(ms / 1000).toFixed(1)} s` : ''}
+        {rows.length} steps{ms ? ` · first plan in ${(ms / 1000).toFixed(1)} s` : ''}
         {fixes ? ` · ${fixes} checked by HereO’s safety rules` : ' · all passed HereO’s safety rules'}
       </Text>
     </Panel>
   );
 }
+
+/** A brief rewritten after dispatch reads as an update, not a second brief. */
+const label = (d: AgentDecision, name: (id: string) => string | undefined) =>
+  d.tool === 'write_brief' && d.phase === 'reassess' ? 'Updated the brief' : describeDecision(d, name);
 
 const chipOf = (d: AgentDecision) => (d.tool.startsWith('guard:') ? 'Safety rules' : modelName(d.model));
 
@@ -71,7 +75,7 @@ function Row({ d, name, chip }: { d: AgentDecision; name: (id: string) => string
       </View>
       <View style={{ flex: 1, gap: 4 }}>
         {chip && <ModelChip label={chipOf(d)} tone={rule ? 'rules' : d.verdict === 'blocked' ? 'alert' : 'meta'} />}
-        <Text style={styles.text}>{describeDecision(d, name)}</Text>
+        <Text style={styles.text}>{label(d, name)}</Text>
         {d.verdict !== 'allowed' && d.reason && <Text style={[styles.reason, { color: v.color }]}>{d.reason}</Text>}
       </View>
     </View>

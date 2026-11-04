@@ -88,6 +88,12 @@ export function SceneCard({ path, events, title = 'Where they are' }: { path: st
   const blurred = latest?.body?.match(/\[(\d+) blurred\]$/)?.[1];
   return (
     <Panel style={{ padding: 0, overflow: 'hidden' }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 14 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Label>{title.toUpperCase()}</Label>
+          {!!description && <ModelChip label="Muse Spark vision" />}
+        </View>
+      </View>
       {url ? (
         <View>
           <Image source={{ uri: url }} style={styles.photo} contentFit="cover" accessibilityLabel="Photo of the place, faces blurred" />
@@ -99,11 +105,7 @@ export function SceneCard({ path, events, title = 'Where they are' }: { path: st
           </View>
         </View>
       ) : null}
-      <View style={{ padding: 16, gap: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Label>{title.toUpperCase()}</Label>
-          {!!description && <ModelChip label="Muse Spark vision" />}
-        </View>
+      <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 8 }}>
         {!!description && <Text style={styles.description}>{description}</Text>}
       </View>
     </Panel>
