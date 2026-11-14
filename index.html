@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>HereO · Help is closer than you think</title>
-<meta name="description" content="HereO turns neighbours into guardians. Hold one button and the people nearby, and the people who love you, know where you are and what to do.">
+<meta name="description" content="HereO turns neighbours into heroes. Hold one button and the people nearby, and the people who love you, know where you are and what to do. Founding 100 Heroes now recruiting in Cambridge.">
 <meta name="theme-color" content="#0B0B0F">
 <meta property="og:title" content="HereO · Will you answer the call?">
-<meta property="og:description" content="Hold one button. Nearby guardians and your circle know where you are and what to do, planned in seconds by Meta's Muse Spark.">
+<meta property="og:description" content="Hold one button. Nearby heroes and your circle know where you are and what to do. Join the Founding 100 Heroes in Cambridge.">
 <meta property="og:image" content="https://hereo.app/og.jpg">
 <meta property="og:url" content="https://hereo.app">
 <meta property="og:type" content="website">
@@ -94,8 +94,9 @@ header{position:sticky;top:0;padding:14px 0}
 .al{background:rgba(255,255,255,.08);color:var(--muted)}
 .os{background:rgba(43,212,125,.18);color:#7CF0B3}
 .pbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
-.pbtns span{height:40px;border-radius:14px;display:grid;place-items:center;font-size:12px;font-weight:700}
+.pbtns>span{height:40px;border-radius:14px;display:grid;place-items:center;font-size:12px;font-weight:700}
 .p911{background:var(--alert)}
+.pbtns .p911{display:flex;align-items:center;justify-content:center;gap:.3em}
 .psafe{border:1.5px solid var(--safe);color:var(--safe)}
 .chip{position:absolute;padding:12px 16px;border-radius:18px;font-size:13px;display:flex;align-items:center;gap:10px;animation:float 8s ease-in-out infinite}
 .chip b{font-family:Lexend;font-size:18px}
@@ -163,6 +164,72 @@ section.wrap{padding-top:110px;padding-bottom:110px}
 .places{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:34px}
 .places span{padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid var(--edge);font-size:13px;color:var(--muted)}
 
+/* cities */
+.cities{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:48px}
+.city{padding:32px 28px;display:flex;flex-direction:column;gap:16px}
+.city-top{display:flex;gap:14px;align-items:center}
+.city-flag{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:26px;background:rgba(255,255,255,.07);border:1px solid var(--edge)}
+.city h3{font-size:24px}
+.city small{color:var(--h2);font-weight:600;font-size:13px;letter-spacing:.02em}
+.city p{color:var(--muted);font-size:15.5px}
+.city ul{list-style:none;display:grid;gap:8px;font-size:14.5px;color:rgba(255,255,255,.85)}
+.city li{display:flex;gap:10px;align-items:flex-start}
+.city li::before{content:"";flex:none;width:7px;height:7px;margin-top:8px;border-radius:50%;background:var(--grad)}
+.city .btn{margin-top:auto;align-self:flex-start;color:#fff}
+.cities-more{font-size:16px;margin-top:28px}
+.cities-more a{color:#fff;text-decoration:underline;text-underline-offset:3px}
+@media (max-width:980px){.cities{grid-template-columns:1fr}}
+@media (max-width:620px){.city{padding:26px 20px}.city .btn{width:100%}}
+/* join */
+.join{display:grid;grid-template-columns:1fr 1fr;gap:48px;padding:56px;position:relative;overflow:hidden}
+.join::before{content:"";position:absolute;inset:-40%;background:radial-gradient(closest-side,rgba(232,51,139,.22),transparent);z-index:-1}
+.join .places{justify-content:flex-start}
+.f100{display:flex;gap:18px;align-items:flex-start;margin-top:30px;padding:20px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+.f100-badge{flex:none;width:76px;height:76px;border-radius:50%;background:var(--grad);display:grid;place-items:center;text-align:center;align-content:center;box-shadow:0 10px 30px rgba(232,51,139,.45)}
+.f100-badge b{font-family:Lexend;font-size:19px;line-height:1}
+.f100-badge small{font-size:10px;font-weight:700;letter-spacing:.06em;opacity:.9}
+.f100 h3{font-size:20px;margin-bottom:6px}
+.f100 p{color:var(--muted);font-size:15px}
+.f100 .f100-count{margin-top:10px;color:#fff;font-weight:600}
+.seg{display:grid;grid-template-columns:1fr 1fr;padding:5px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--edge);margin-bottom:22px}
+.seg button{height:42px;border:0;border-radius:999px;background:transparent;color:var(--muted);font:600 14px Inter,system-ui,sans-serif;cursor:pointer}
+.seg button[aria-selected=true]{background:var(--grad);color:#fff;box-shadow:0 6px 20px rgba(232,51,139,.4)}
+.jform{display:grid;gap:14px}
+.jform[hidden],.jdone[hidden],.jform .other[hidden]{display:none}
+.fhint{color:var(--muted);font-size:15px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.jform label{display:grid;gap:6px;font-size:13px;font-weight:600;color:rgba(255,255,255,.82)}
+.jform i{font-style:normal;font-weight:400;color:var(--faint)}
+.jform input:not([type=checkbox]),.jform select,.jform textarea{width:100%;height:46px;padding:0 14px;border-radius:14px;border:1px solid var(--edge);background:rgba(11,11,15,.55);color:#fff;font:400 16px Inter,system-ui,sans-serif;outline:none;transition:border-color .2s,box-shadow .2s}
+.jform textarea{height:auto;padding:12px 14px;resize:vertical}
+.jform select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23fff' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
+.jform select option{background:#14141B}
+.jform input:focus,.jform select:focus,.jform textarea:focus{border-color:#F2602E;box-shadow:0 0 0 3px rgba(242,96,46,.25)}
+.jform [aria-invalid=true]{border-color:var(--alert)!important}
+.jform fieldset{border:0;display:grid;gap:8px}
+.jform legend{font-size:13px;font-weight:600;color:rgba(255,255,255,.82);margin-bottom:8px}
+.chips{display:flex;gap:8px}
+.jform label.cb{display:block;cursor:pointer}
+.cb input{position:absolute;opacity:0;pointer-events:none}
+.cb span{display:inline-flex;align-items:center;height:38px;padding:0 18px;border-radius:999px;border:1px solid var(--edge);background:rgba(255,255,255,.05);font-weight:600}
+.cb input:checked+span{background:var(--grad);border-color:transparent}
+.cb input:focus-visible+span{box-shadow:0 0 0 3px rgba(242,96,46,.4)}
+.jform label.tick{display:flex;gap:10px;align-items:flex-start;font-weight:400;font-size:14px;color:var(--muted);cursor:pointer}
+.tick input{flex:none;width:20px;height:20px;margin-top:1px;accent-color:#E8338B}
+.tick input[aria-invalid=true]{outline:2px solid var(--alert);outline-offset:2px}
+.hp{position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;opacity:0}
+.jform .btn{width:100%;height:52px;border:0;color:#fff;font:600 16px Inter,system-ui,sans-serif;cursor:pointer;margin-top:4px}
+.jform .btn[disabled]{opacity:.6;cursor:progress;transform:none}
+.ferr{color:#FF8A8E;font-size:14px;min-height:1px}
+.ferr:empty{display:none}
+.jdone{text-align:center;padding:30px 10px;display:grid;gap:12px;justify-items:center;outline:none}
+.jdone-ic{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-size:30px;font-weight:700;background:linear-gradient(120deg,#12A150,#2BD47D);box-shadow:0 12px 40px rgba(43,212,125,.45)}
+.jdone h3{font-size:26px}
+.jdone p{color:var(--muted);max-width:420px}
+.jdone .btn{margin-top:8px;color:#fff;font:600 15px Inter,system-ui,sans-serif;cursor:pointer}
+.fpriv{margin-top:18px;font-size:12.5px;color:var(--faint)}
+@media (max-width:980px){.join{grid-template-columns:1fr;padding:40px 28px;gap:36px}}
+@media (max-width:620px){.join{padding:30px 18px}.row2{grid-template-columns:1fr}.f100{padding:16px}.f100-badge{width:64px;height:64px}}
 footer{padding:40px 0 56px;color:var(--faint);font-size:14px}
 .foot{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.08);padding-top:28px}
 .foot a:hover{color:#fff}
@@ -206,8 +273,8 @@ footer{padding:40px 0 56px;color:var(--faint);font-size:14px}
   <div class="wrap">
     <div class="nav glass">
       <a class="brand" href="#top"><img src="favicon.png" alt="">HereO</a>
-      <nav><a href="#how">How it works</a><a href="#hold">Try it</a><a href="#ai">Muse Dispatcher</a><a href="#guardians">Guardians</a></nav>
-      <a class="btn btn-hero" href="#join">Become a guardian</a>
+      <nav><a href="#how">How it works</a><a href="#hold">Try it</a><a href="#ai">AI coordinator</a><a href="#heroes">Heroes</a><a href="#cities">Cities</a><a href="#join" data-tab="waitlist">Waitlist</a></nav>
+      <a class="btn btn-hero" href="#join" data-tab="hero">Become a hero</a>
     </div>
   </div>
 </header>
@@ -215,15 +282,15 @@ footer{padding:40px 0 56px;color:var(--faint);font-size:14px}
 <main id="top">
   <div class="wrap hero">
     <div class="reveal">
-      <div class="pill glass"><b>New</b> Muse Dispatcher, powered by Meta AI</div>
+      <a class="pill glass" href="#join" data-tab="hero"><b>Now recruiting</b> Founding 100 Heroes · Cambridge</a>
       <h1>Will you<br>answer <span class="grad">the call?</span></h1>
-      <p class="lede">HereO turns neighbours into guardians. Hold one button and the people nearby, and the people who love you, know exactly where you are and what to do.</p>
+      <p class="lede">HereO turns neighbours into heroes. Hold one button and the people nearby, and the people who love you, know exactly where you are and what to do.</p>
       <div class="ctas">
-        <a class="btn btn-hero" href="#hold">Feel it work
+        <a class="btn btn-hero" href="#join" data-tab="hero">Become a hero
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-        <a class="btn btn-glass" href="#guardians">Become a guardian</a>
+        <a class="btn btn-glass" href="#join" data-tab="waitlist">Get early access</a>
       </div>
-      <div class="trust"><span>Help in seconds</span><span>Verified guardians</span><span>Her-O mode for women</span></div>
+      <div class="trust"><span>Help in seconds</span><span>ID-checked, trained heroes</span><span>Her-O mode for women</span></div>
     </div>
 
     <div class="stage reveal" aria-label="HereO live incident screen">
@@ -232,15 +299,15 @@ footer{padding:40px 0 56px;color:var(--faint);font-size:14px}
         <div class="bar"><span>9:41</span><span>HereO</span></div>
         <span class="tag live">Live · help is coming</span>
         <h4>Maya is 2 min away</h4>
-        <div class="brief"><small class="grad">✦ Muse brief</small>Your circle has your live location. Head into the pharmacy on your left and stay near the counter.</div>
+        <div class="brief"><small class="grad">✦ Your plan</small>Your circle has your live location. Head into the pharmacy on your left and stay near the counter.</div>
         <div class="who">
-          <div><span class="av">MO</span>Maya · guardian<em class="ow">On the way</em></div>
-          <div><span class="av">JR</span>Jordan · guardian<em class="os">On scene</em></div>
+          <div><span class="av">MO</span>Maya · hero<em class="ow">On the way</em></div>
+          <div><span class="av">JR</span>Jordan · hero<em class="os">On scene</em></div>
           <div><span class="av dk">M</span>Mum · your circle<em class="al">Alerted</em></div>
         </div>
-        <div class="pbtns"><span class="p911">Call 911</span><span class="psafe">I'm safe</span></div>
+        <div class="pbtns"><span class="p911">Call <span class="emerg">999</span></span><span class="psafe">I'm safe</span></div>
       </div>
-      <div class="chip c1 glass"><span class="dot"></span><span><b>6</b> guardians nearby</span></div>
+      <div class="chip c1 glass"><span class="dot"></span><span><b>6</b> heroes nearby</span></div>
       <div class="chip c2 glass">🛡️ <span>Be present. Don't pursue.</span></div>
     </div>
   </div>
@@ -263,9 +330,9 @@ footer{padding:40px 0 56px;color:var(--faint);font-size:14px}
     </div>
     <div class="steps">
       <div class="step glass reveal"><h3>Hold for help</h3><p>Hold the button for two seconds. A tap never fires, so a phone in a pocket stays quiet. Speak a sentence if you can.</p></div>
-      <div class="step glass reveal"><h3>Muse plans it</h3><p>Muse Dispatcher reads what's happening and gives every person a clear job, written in calm, plain words.</p></div>
-      <div class="step glass reveal"><h3>People show up</h3><p>Verified guardians nearby and your own circle get your live location and their role. You see who's coming.</p></div>
-      <div class="step glass reveal"><h3>You're safe</h3><p>Tap "I'm safe" to stand everyone down. Guardians get thanked, and the neighbourhood gets a little stronger.</p></div>
+      <div class="step glass reveal"><h3>HereO plans it</h3><p>Our AI coordinator reads what's happening and gives every person a clear job, written in calm, plain words.</p></div>
+      <div class="step glass reveal"><h3>People show up</h3><p>Trained heroes nearby and your own circle get your live location and their role. You see who's coming.</p></div>
+      <div class="step glass reveal"><h3>You're safe</h3><p>Tap "I'm safe" to stand everyone down. Heroes get thanked, and the neighbourhood gets a little stronger.</p></div>
     </div>
   </section>
 
@@ -294,57 +361,160 @@ footer{padding:40px 0 56px;color:var(--faint);font-size:14px}
       <div class="card glass reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0M9 20l3-6 3 3v4M6 12l3-4 4 1 3 3"/></svg></div><h3>Walk with me</h3><p>Your circle follows your walk live. Miss your check-in and they're alerted automatically.</p></div>
       <div class="card glass reveal"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h3>Check in later</h3><p>Going on a date or a late shift? Set a time. If you don't check in, your circle knows where you were.</p></div>
       <div class="card glass reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></div><h3>Fake call</h3><p>A realistic incoming call to give you an easy reason to step away from a bad situation.</p></div>
-      <div class="card glass reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div><h3>Verified guardians</h3><p>Guardians verify their identity and learn one rule before anything else: be present, don't pursue.</p></div>
-      <div class="card glass reveal"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/></svg></div><h3>Her-O mode</h3><p>One switch routes your request only to verified women guardians, when that's what feels right.</p></div>
+      <div class="card glass reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div><h3>ID-checked heroes</h3><p>Before their first call, every hero verifies their identity and learns one rule above all: be present, don't pursue.</p></div>
+      <div class="card glass reveal"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/></svg></div><h3>Her-O mode</h3><p>One switch routes your request only to verified women heroes, when that's what feels right.</p></div>
     </div>
   </section>
 
   <section class="wrap" id="ai">
     <div class="ai">
       <div class="reveal">
-        <div class="eyebrow">Muse Dispatcher · built with Meta AI</div>
-        <h2 class="sh">An AI dispatcher that keeps <span class="grad">everyone calm and clear.</span></h2>
-        <p class="sp">In a crisis nobody wants to type. Muse Dispatcher uses Meta's Muse models to turn a hold, a whispered sentence or a photo of the scene into a plan: who goes where, what to say, and when to call emergency services.</p>
+        <div class="eyebrow">AI coordinator</div>
+        <h2 class="sh">An AI coordinator that keeps <span class="grad">everyone calm and clear.</span></h2>
+        <p class="sp">In a crisis nobody wants to type. HereO's AI coordinator turns a hold, a whispered sentence or a photo of the scene into a plan: who goes where, what to say, and when to call <span class="emerg">999</span>.</p>
         <p class="sp" style="font-size:16px">Every plan passes through safety guardrails first. It never tells anyone to confront, chase or put themselves at risk.</p>
       </div>
       <div class="flow glass reveal">
-        <div class="fl"><span class="k">Hold</span><p>Priya holds her button near 5th &amp; Main.</p></div>
+        <div class="fl"><span class="k">Hold</span><p>Priya holds her button on Mill Road.</p></div>
         <div class="fl"><span class="k">Voice</span><p>"Someone's been following me since the station."</p></div>
-        <div class="fl"><span class="k">Muse</span><p>Assess risk, find who is closest, assign roles, write the brief.</p></div>
+        <div class="fl"><span class="k">AI</span><p>Assess risk, find who is closest, assign roles, write the brief.</p></div>
         <div class="fl out"><span class="k">Plan</span><p><b>Maya:</b> walk to the corner and be visible. <b>Jordan:</b> meet Priya at the pharmacy. <b>Mum:</b> stay on the phone with her.</p></div>
       </div>
     </div>
   </section>
 
-  <section class="wrap" id="guardians">
+  <section class="wrap" id="heroes">
     <div class="reveal" style="text-align:center">
-      <div class="eyebrow">For guardians</div>
+      <div class="eyebrow">For heroes</div>
       <h2 class="sh" style="margin:0 auto">Being a hero is mostly <span class="grad">just showing up.</span></h2>
       <p class="sp" style="margin:20px auto 0">You don't need a cape. You need to be nearby, be visible and be kind. HereO tells you exactly what to do, and nothing more.</p>
     </div>
     <div class="code">
       <div class="glass reveal"><b class="grad">Be present.</b><p>Stand where you can be seen. Presence alone changes what happens next.</p></div>
       <div class="glass reveal"><b class="grad">Don't pursue.</b><p>You are there for the person, not the threat. No chasing, no confronting.</p></div>
-      <div class="glass reveal"><b class="grad">Call 911.</b><p>If there's danger, emergency services come first. HereO fills the minutes until they arrive.</p></div>
+      <div class="glass reveal"><b class="grad">Call <span class="emerg">999</span>.</b><p>If there's danger, emergency services come first. HereO fills the minutes until they arrive.</p></div>
     </div>
   </section>
 
-  <section class="wrap" id="join">
-    <div class="cta glass reveal">
-      <h2>Be the help <span class="grad">nearby.</span></h2>
-      <p>HereO is coming to iPhone and Android. Our first guardian network launches in Cambridge, UK, with Sarasota, Florida close behind.</p>
-      <div class="ctas">
-        <a class="btn btn-hero" href="https://github.com/jclift3/rork-here-o" target="_blank" rel="noopener">See how it's built</a>
-        <a class="btn btn-glass" href="#hold">Try the button</a>
+  <section class="wrap" id="cities">
+    <div class="reveal">
+      <div class="eyebrow">Where we're starting</div>
+      <h2 class="sh">Two towns first. <span class="grad">Done properly.</span></h2>
+      <p class="sp">A hero network only works when heroes are close by, so we're launching street by street, with local partners, before we go anywhere else.</p>
+    </div>
+    <div class="cities">
+      <div class="city glass reveal">
+        <div class="city-top"><span class="city-flag">🇬🇧</span><div><h3>Cambridge, UK</h3><small>Hero network pilot · Lent term 2027</small></div></div>
+        <p>Our first hero network. We're recruiting the Founding 100 from colleges, societies, hospitals and the neighbourhoods in between, starting with the walk home around Mill Road and the city centre on Thursday to Saturday nights.</p>
+        <ul>
+          <li>ID-checked, trained student and local heroes</li>
+          <li>Designed around college life, welfare teams and porters</li>
+          <li>Emergency number shown in the app: 999</li>
+        </ul>
+        <a class="btn btn-hero" href="#join" data-tab="hero" data-city="cambridge">Become a Cambridge hero</a>
       </div>
-      <div class="places"><span>📍 Cambridge, UK · guardian pilot</span><span>📍 Sarasota, FL · walks &amp; check-ins</span></div>
+      <div class="city glass reveal">
+        <div class="city-top"><span class="city-flag">🇺🇸</span><div><h3>Sarasota, Florida</h3><small>Walks, check-ins &amp; family · early 2027</small></div></div>
+        <p>Our US home. Families and friends are already testing HereO's walk-with-me, timed check-ins and fake call, so the people who love you know you got home, without anyone having to ask.</p>
+        <ul>
+          <li>Live walks your circle can follow</li>
+          <li>Missed check-ins alert your circle automatically</li>
+          <li>Emergency number shown in the app: 911</li>
+        </ul>
+        <a class="btn btn-glass" href="#join" data-tab="waitlist" data-city="sarasota">Join the Sarasota waitlist</a>
+      </div>
+    </div>
+    <p class="sp cities-more">Somewhere else? <a href="#join" data-tab="waitlist">Join the waitlist</a> and tell us where. Every sign-up counts toward where we go next.</p>
+  </section>
+
+  <section class="wrap" id="join">
+    <div class="join glass reveal">
+      <div class="join-intro">
+        <div class="eyebrow">Join HereO</div>
+        <h2 class="sh">Be the help <span class="grad">nearby.</span></h2>
+        <p class="sp">HereO is coming to iPhone and Android. Our first hero network launches in Cambridge, UK, with Sarasota, Florida close behind.</p>
+        <div class="f100">
+          <div class="f100-badge"><b>#001</b><small>to #100</small></div>
+          <div>
+            <h3>The Founding 100 Heroes</h3>
+            <p>Cambridge's first hundred heroes get a numbered enamel cape pin, their name on the founding wall, and HereO Plus free for life.</p>
+            <p class="f100-count" id="f100Count" hidden></p>
+          </div>
+        </div>
+        <div class="places"><span>📍 Cambridge, UK · hero pilot</span><span>📍 Sarasota, FL · walks &amp; check-ins</span></div>
+      </div>
+
+      <div class="join-forms">
+        <div class="seg" role="tablist" aria-label="Choose how to join">
+          <button type="button" role="tab" id="tab-hero" aria-controls="form-hero" aria-selected="true" data-tab="hero">Become a hero</button>
+          <button type="button" role="tab" id="tab-waitlist" aria-controls="form-waitlist" aria-selected="false" data-tab="waitlist">Join the waitlist</button>
+        </div>
+
+        <form class="jform" id="form-hero" role="tabpanel" aria-labelledby="tab-hero" data-kind="hero" novalidate>
+          <p class="fhint">Two minutes. We'll follow up with a quick ID check and short training before you take a call.</p>
+          <div class="row2">
+            <label>First name<input name="name" autocomplete="given-name" maxlength="120" required></label>
+            <label>Email<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
+          </div>
+          <label>Where are you?
+            <select name="city" required>
+              <option value="cambridge">Cambridge, UK</option>
+              <option value="sarasota">Sarasota, FL</option>
+              <option value="other">Somewhere else</option>
+            </select>
+          </label>
+          <label class="other" hidden>Which town or city?<input name="city_other" maxlength="120" autocomplete="address-level2"></label>
+          <label><span>College, society or workplace <i>(optional)</i></span><input name="affiliation" maxlength="160" placeholder="e.g. Newnham, CUBC, Addenbrooke's"></label>
+          <fieldset><legend>Nights you're usually out and about <i>(optional)</i></legend>
+            <div class="chips">
+              <label class="cb"><input type="checkbox" name="nights" value="thu"><span>Thu</span></label>
+              <label class="cb"><input type="checkbox" name="nights" value="fri"><span>Fri</span></label>
+              <label class="cb"><input type="checkbox" name="nights" value="sat"><span>Sat</span></label>
+            </div>
+          </fieldset>
+          <label><span>Why do you want to be a hero? <i>(optional)</i></span><textarea name="why" rows="2" maxlength="1000"></textarea></label>
+          <label class="tick"><input type="checkbox" name="first_aid"><span>I have first-aid training</span></label>
+          <label class="tick"><input type="checkbox" name="over_18" required><span>I'm 18 or over</span></label>
+          <label class="tick"><input type="checkbox" name="consent" required><span>HereO can email me about becoming a hero. I can unsubscribe at any time.</span></label>
+          <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button class="btn btn-hero" type="submit">Apply to be a hero</button>
+          <p class="ferr" role="alert"></p>
+        </form>
+
+        <form class="jform" id="form-waitlist" role="tabpanel" aria-labelledby="tab-waitlist" data-kind="waitlist" hidden novalidate>
+          <p class="fhint">Get an invite as soon as HereO is ready where you live.</p>
+          <label>Email<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
+          <label><span>First name <i>(optional)</i></span><input name="name" autocomplete="given-name" maxlength="120"></label>
+          <label>Where are you?
+            <select name="city" required>
+              <option value="cambridge">Cambridge, UK</option>
+              <option value="sarasota">Sarasota, FL</option>
+              <option value="other">Somewhere else</option>
+            </select>
+          </label>
+          <label class="other" hidden>Which town or city?<input name="city_other" maxlength="120" autocomplete="address-level2"></label>
+          <label class="tick"><input type="checkbox" name="consent" required><span>HereO can email me about early access. I can unsubscribe at any time.</span></label>
+          <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button class="btn btn-hero" type="submit">Join the waitlist</button>
+          <p class="ferr" role="alert"></p>
+        </form>
+
+        <div class="jdone" id="joinDone" hidden tabindex="-1">
+          <div class="jdone-ic">✓</div>
+          <h3 id="doneTitle"></h3>
+          <p id="doneText"></p>
+          <button type="button" class="btn btn-glass" id="doneAgain"></button>
+        </div>
+
+        <p class="fpriv">We only use your details to contact you about HereO, and we never sell them. Reply to any email from us to be removed. <a href="/privacy" style="text-decoration:underline">Privacy policy</a>.</p>
+      </div>
     </div>
   </section>
 </main>
 
 <footer>
   <div class="wrap foot">
-    <span>© 2026 HereO. In an emergency, always call 911 (or 999 in the UK).</span>
+    <span>© 2026 HereO. In an emergency, always call 999 in the UK or 911 in the US.</span>
     <span><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="https://github.com/jclift3/rork-here-o" target="_blank" rel="noopener">GitHub</a></span>
   </div>
 </footer>
@@ -362,7 +532,7 @@ footer{padding:40px 0 56px;color:var(--faint);font-size:14px}
   var ring=document.getElementById('ring'),prog=document.getElementById('prog'),log=document.getElementById('log'),
       t=document.getElementById('coreTxt'),s=document.getElementById('coreSub');
   var C=798,DUR=2000,start=0,raf=0,done=false,timers=[];
-  var lines=['<b>Alert sent.</b> Your live location is shared.','<b>Muse Dispatcher</b> wrote a plan in 1.8 s.','<b>Maya</b>, a guardian 350 m away, is on her way.','<b>Mum and Sam</b> in your circle can see you.'];
+  var lines=['<b>Alert sent.</b> Your live location is shared.','<b>The AI coordinator</b> wrote a plan in 1.8 s.','<b>Maya</b>, a hero 350 m away, is on her way.','<b>Mum and Sam</b> in your circle can see you.'];
   function set(p){prog.style.strokeDashoffset=C*(1-p)}
   function reset(){done=false;ring.classList.remove('sent');t.textContent='HOLD';s.textContent='FOR HELP';set(0);log.innerHTML='';timers.forEach(clearTimeout);timers=[]}
   function tick(now){var p=Math.min(1,(now-start)/DUR);set(p);if(p<1){raf=requestAnimationFrame(tick)}else fire()}
@@ -375,6 +545,92 @@ footer{padding:40px 0 56px;color:var(--faint);font-size:14px}
   ['pointerup','pointerleave','pointercancel'].forEach(function(ev){ring.addEventListener(ev,up)});
   ring.addEventListener('keydown',function(e){if((e.key===' '||e.key==='Enter')&&!e.repeat)down(e)});
   ring.addEventListener('keyup',function(e){if(e.key===' '||e.key==='Enter')up()});
+
+  // emergency number by visitor's region (UK pilot default)
+  try{
+    var tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';
+    var num=/^America\//.test(tz)?'911':(/^Europe\//.test(tz)&&tz!=='Europe/London'&&tz!=='Europe/Dublin'?'112':'999');
+    document.querySelectorAll('.emerg').forEach(function(e){e.textContent=num});
+  }catch(e){}
+
+  // join: waitlist + Founding 100 hero application
+  var SB='https://jymqzmhqlejoawhgdwgj.supabase.co/rest/v1/rpc/',KEY='sb_publishable_-Hj7geM8FpuzXMelvI7ekw_HKrnb8_m';
+  function rpc(fn,body){return fetch(SB+fn,{method:'POST',headers:{'apikey':KEY,'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){return r.json().catch(function(){return {}}).then(function(j){if(!r.ok)throw j;return j})})}
+  var qs=new URLSearchParams(location.search);
+  var source=(qs.get('utm_source')||qs.get('ref')||qs.get('src')||'').slice(0,200);
+  if(qs.get('utm_campaign'))source=(source+'/'+qs.get('utm_campaign')).slice(0,200);
+  var forms={hero:document.getElementById('form-hero'),waitlist:document.getElementById('form-waitlist')},
+      jd=document.getElementById('joinDone'),again=document.getElementById('doneAgain'),
+      tabs=document.querySelectorAll('.seg [data-tab]');
+  function show(kind){
+    jd.hidden=true;
+    Object.keys(forms).forEach(function(k){forms[k].hidden=k!==kind});
+    tabs.forEach(function(b){b.setAttribute('aria-selected',b.getAttribute('data-tab')===kind?'true':'false')});
+  }
+  tabs.forEach(function(b){b.addEventListener('click',function(){show(b.getAttribute('data-tab'))})});
+  document.querySelectorAll('a[data-tab]').forEach(function(a){a.addEventListener('click',function(){var k=a.getAttribute('data-tab'),c=a.getAttribute('data-city');show(k);if(c){var sel=forms[k].elements.city;sel.value=c;sel.dispatchEvent(new Event('change'))}})});
+  var startTab=qs.get('join')||(location.hash==='#waitlist'?'waitlist':location.hash==='#apply'?'hero':'');
+  if(startTab==='waitlist'||startTab==='hero'){show(startTab);setTimeout(function(){document.getElementById('join').scrollIntoView()},50)}
+
+  Object.keys(forms).forEach(function(kind){
+    var f=forms[kind],city=f.elements.city,other=f.querySelector('.other');
+    city.addEventListener('change',function(){other.hidden=city.value!=='other'});
+    if(/^America\//.test(tz||'')&&kind==='waitlist')city.value='sarasota';
+    f.addEventListener('input',function(e){e.target.removeAttribute('aria-invalid')});
+    f.addEventListener('change',function(e){e.target.removeAttribute('aria-invalid')});
+    f.addEventListener('submit',function(e){
+      e.preventDefault();
+      var err=f.querySelector('.ferr'),btn=f.querySelector('button[type=submit]'),bad=null;err.textContent='';
+      f.querySelectorAll('[required]').forEach(function(el){
+        var ok=el.type==='checkbox'?el.checked:(el.type==='email'?/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(el.value.trim()):el.value.trim()!=='');
+        if(!ok){el.setAttribute('aria-invalid','true');bad=bad||el}
+      });
+      if(bad){
+        err.textContent=bad.name==='email'?'Please enter a valid email address.':bad.name==='over_18'?'Heroes need to be 18 or over.':bad.name==='consent'?'Please tick the box so we can email you.':'Please fill in the highlighted fields.';
+        bad.focus();return;
+      }
+      var el=f.elements,body={p_kind:kind,p_email:el.email.value.trim(),p_city:city.value,p_name:el.name.value.trim()||null,
+        p_city_other:city.value==='other'?el.city_other.value.trim()||null:null,p_consent:el.consent.checked,
+        p_source:source||null,p_referrer:(document.referrer||'').slice(0,500)||null,p_hp:el.website.value||null};
+      if(kind==='hero'){
+        body.p_affiliation=el.affiliation.value.trim()||null;body.p_why=el.why.value.trim()||null;
+        body.p_first_aid=el.first_aid.checked;body.p_over_18=el.over_18.checked;
+        body.p_nights=Array.prototype.map.call(f.querySelectorAll('input[name=nights]:checked'),function(c){return c.value});
+      }
+      btn.disabled=true;var label=btn.textContent;btn.textContent='Sending…';
+      rpc('site_signup',body).then(function(r){
+        var t=document.getElementById('doneTitle'),p=document.getElementById('doneText'),first=body.p_name?', '+body.p_name:'';
+        if(kind==='hero'&&r.founding_no){
+          t.textContent='You\'re applicant #'+('00'+r.founding_no).slice(-3)+first+'.';
+          p.textContent=r.founding_no<=100?'You\'re in the running for the Founding 100. We\'ll email you about a quick ID check and training before our Cambridge launch.':'Thank you. We\'ll email you about a quick ID check and training before our Cambridge launch.';
+        }else if(kind==='hero'){
+          t.textContent='Thank you'+first+'.';
+          p.textContent='We\'re starting in Cambridge. We\'ll email you as soon as heroes are needed near you.';
+        }else{
+          t.textContent='You\'re on the list'+first+'.';
+          p.textContent='We\'ll email you as soon as HereO is ready where you live.';
+        }
+        again.textContent=kind==='hero'?'Join the waitlist too':'Become a hero too';
+        again.onclick=function(){show(kind==='hero'?'waitlist':'hero')};
+        f.reset();f.querySelectorAll('.other').forEach(function(o){o.hidden=true});
+        f.hidden=true;jd.hidden=false;jd.focus();loadCount();
+        if(window.va)try{window.va('event',{name:'signup_'+kind})}catch(e){}
+      }).catch(function(x){
+        var m=(x&&x.message)||'';
+        err.textContent=/18/.test(m)?'Heroes need to be 18 or over.':/too many/.test(m)?'Too many sign-ups from this connection. Please try again later.':/email/.test(m)?'Please check your email address.':'Something went wrong. Please try again in a moment.';
+      }).then(function(){btn.disabled=false;btn.textContent=label});
+    });
+  });
+
+  // public Founding 100 counter (shown once it's meaningful)
+  function loadCount(){
+    rpc('founding_hero_count',{}).then(function(n){
+      var c=document.getElementById('f100Count');
+      if(typeof n==='number'&&n>=10){c.textContent=n+' Cambridge heroes have applied so far.';c.hidden=false}
+    }).catch(function(){});
+  }
+  loadCount();
 })();
 </script>
 </body>
