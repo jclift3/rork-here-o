@@ -434,7 +434,7 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
               <GradientPanel>
                 <View style={styles.between}>
                   <Label color={night.text}>YOUR JOB</Label>
-                  <ModelChip label={modelName(incident.agent_model ?? '')} tone={incident.agent_model?.startsWith('muse') ? 'meta' : 'rules'} />
+                  <ModelChip label={modelName(incident.agent_model ?? '')} tone={incident.agent_model && incident.agent_model !== 'rules-only' ? 'meta' : 'rules'} />
                 </View>
                 <Text style={night_styles.big}>{me.role}</Text>
                 <Text style={night_styles.sub}>{conduct(num)}</Text>
@@ -539,7 +539,7 @@ function BriefCard({ bundle }: { bundle: IncidentBundle }) {
           <Sparkles size={15} color={urgent ? colors.alert : colors.heroStart} />
           <Label>{incident.status === 'active' ? 'LIVE BRIEF' : 'LAST BRIEF'}</Label>
         </View>
-        {incident.brief && <ModelChip label={modelName(incident.agent_model ?? 'muse-spark')} tone={urgent ? 'alert' : 'meta'} />}
+        {incident.brief && <ModelChip label={modelName(incident.agent_model ?? '')} tone={urgent ? 'alert' : 'meta'} />}
       </View>
       <Text style={night_styles.big} accessibilityLiveRegion="polite">
         {incident.brief ?? 'Alerting your circle and finding heroes nearby…'}

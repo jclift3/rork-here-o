@@ -20,6 +20,7 @@ const VERDICT = {
 /** "muse-spark-1.3" → "Muse Spark". */
 export function modelName(model: string): string {
   if (!model || model === 'rules-only') return 'Safety rules';
+  if (model.startsWith('claude')) return 'Claude';
   if (model.startsWith('muse-spark')) return 'Muse Spark';
   if (model.startsWith('muse-voice')) return 'Muse Voice';
   if (model.startsWith('sam')) return 'SAM 3.1';

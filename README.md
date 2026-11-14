@@ -1,6 +1,6 @@
 # HereO
 
-> **Meta Global AI Developer Hackathon entry:** see [docs/meta-hackathon.md](docs/meta-hackathon.md) for Muse Dispatcher, the AI coordinator built on Muse Spark, Muse Voice Transcribe and SAM 3.1, and for exactly what was built during the event.
+> Built for the Meta Global AI Developer Hackathon too: see [docs/meta-hackathon.md](docs/meta-hackathon.md) for Muse Dispatcher (Muse Spark, Muse Voice Transcribe, SAM 3.1). Claude is the default dispatcher; Muse is the fallback when Claude gives no usable plan.
 
 A community guardian network for iOS and Android. Hold one button and the people you trust, plus trained guardians nearby, know where you are within seconds. An AI coordinator triages the moment, gives each guardian one clear job, and keeps a live brief everyone shares. Call 911 is always one tap away.
 
@@ -15,7 +15,6 @@ Guardians are neighbors who show up: be present, de-escalate, stay with the pers
 | `supabase/functions/` | Edge functions: `dispatch` (alert circle, AI triage, send guardians), `brief` (refresh the shared live brief) and `check-ins` (tells the circle when a trip starts or arrives, and turns missed check-ins into help requests, every minute). |
 | `supabase/tests/` | Permission tests that run the migration on a plain Postgres. |
 | `docs/redesign.md` | Design direction from the Figma prototype, with tokens. |
-| `expo/` | The original Rork prototype (mock data only), kept for reference. |
 
 ## The help loop
 

@@ -1,6 +1,6 @@
 # HereO redesign direction
 
-Based on the Figma prototype (Welcome, Log in, Discover, Chats) and the Rork prototype in `expo/`.
+Based on the Figma prototype (Welcome, Log in, Discover, Chats) and the original Rork prototype (removed from the repo; see git history before the TestFlight release).
 
 ## What to keep from Figma
 

@@ -148,7 +148,7 @@ export function Label({ children, color = night.muted }: { children: ReactNode; 
   return <Text style={[styles.label, { color }]}>{children}</Text>;
 }
 
-/** Which Meta model (or rule) did a step. */
+/** Which model (or rule) did a step. */
 export function ModelChip({ label, tone = 'meta' }: { label: string; tone?: 'meta' | 'rules' | 'alert' }) {
   const bg = tone === 'rules' ? 'rgba(18,161,80,0.16)' : tone === 'alert' ? 'rgba(229,37,42,0.18)' : 'rgba(232,51,139,0.16)';
   const fg = tone === 'rules' ? '#3CCB7F' : tone === 'alert' ? '#FF6B6E' : '#FF7AB8';

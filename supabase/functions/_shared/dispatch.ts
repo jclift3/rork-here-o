@@ -4,7 +4,8 @@
 // 1. Alerts the requester's circle immediately (no AI in this path).
 // 2. Finds available guardians nearby (women only in Her-O mode).
 // 3. Asks Claude to triage and give each guardian one job, with an 8 second
-//    budget and a deterministic fallback.
+//    budget. If Claude fails and a Meta key is set, the Muse agent gets
+//    whatever is left of the total budget; then a deterministic fallback.
 // 4. Alerts the chosen guardians and records the triage on the incident.
 //
 // A missed check-in alerts only the circle here. Guardians hear about it later
@@ -13,7 +14,7 @@
 // Safe to call twice: the first call claims the incident via dispatched_at.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { askJson } from "./claude.ts";
+import { askJson, CLAUDE_MODEL } from "./claude.ts";
 import { runAgent } from "./muse/agent.ts";
 import { metaKey } from "./muse/client.ts";
 import { postNotes, recordDecisions, toTriage } from "./muse/respond.ts";
@@ -32,9 +33,11 @@ import type { GuardianCandidate, Incident, Triage } from "./types.ts";
 const SEARCH_RADIUS_M = 1500;
 const CANDIDATE_LIMIT = 6;
 const TRIAGE_TIMEOUT_MS = 8000;
-// The circle is already alerted; heroes can wait a few seconds for a better plan.
-// Muse Spark answers one full-plan turn in about 4 to 6 s.
-const AGENT_BUDGET_MS = 10_000;
+// The circle is already alerted; heroes can wait a few seconds for a better
+// plan, but never more than this in total across Claude and the Muse fallback.
+const TOTAL_AI_BUDGET_MS = 12_000;
+// Muse Spark needs about 4 to 6 s for one full-plan turn; below this, skip it.
+const MIN_MUSE_BUDGET_MS = 4_000;
 
 export type DispatchResult =
   | { status: "already_dispatched_or_closed" }
@@ -203,9 +206,21 @@ async function sendGuardians(
     candidates = (data ?? []) as GuardianCandidate[];
   }
 
-  let aiTriage: Triage | null = null;
-  if (metaKey()) {
-    // Muse Dispatcher (Meta hackathon): a Muse Spark agent with guarded tools.
+  // Claude is the default dispatcher.
+  const started = Date.now();
+  const raw = await askJson({
+    system: TRIAGE_SYSTEM,
+    user: buildTriagePrompt(incident, candidates, circleNames),
+    schema: TRIAGE_SCHEMA,
+    timeoutMs: TRIAGE_TIMEOUT_MS,
+  });
+  let aiTriage: Triage | null = finalizeTriage(raw, incident, candidates, requesterName);
+  let model = aiTriage ? CLAUDE_MODEL : "rules-only";
+
+  // Fallback: the Muse Dispatcher (a Muse Spark agent with guarded tools),
+  // only if Claude gave no usable plan and there is time left.
+  const left = TOTAL_AI_BUDGET_MS - (Date.now() - started);
+  if (!aiTriage && metaKey() && left >= MIN_MUSE_BUDGET_MS) {
     const out = await runAgent({
       phase: "dispatch",
       incident,
@@ -216,21 +231,16 @@ async function sendGuardians(
       scenes: [],
       messages: [],
       fallbackBrief: fallbackTriage(incident, candidates, requesterName).summary,
-      budgetMs: AGENT_BUDGET_MS,
+      budgetMs: left,
     });
     await recordDecisions(db, incident.id, "dispatch", out);
     await postNotes(db, incident.id, out);
-    await db.from("incidents").update({ agent_model: out.model }).eq("id", incident.id);
-    if (out.modelAnswered) aiTriage = toTriage(out);
-  } else {
-    const raw = await askJson({
-      system: TRIAGE_SYSTEM,
-      user: buildTriagePrompt(incident, candidates, circleNames),
-      schema: TRIAGE_SCHEMA,
-      timeoutMs: TRIAGE_TIMEOUT_MS,
-    });
-    aiTriage = finalizeTriage(raw, incident, candidates, requesterName);
+    if (out.modelAnswered) {
+      aiTriage = toTriage(out);
+      model = out.model;
+    }
   }
+  await db.from("incidents").update({ agent_model: model }).eq("id", incident.id);
   const triage: Triage = aiTriage ?? fallbackTriage(incident, candidates, requesterName);
 
   const byId = new Map(candidates.map((c) => [c.user_id, c]));

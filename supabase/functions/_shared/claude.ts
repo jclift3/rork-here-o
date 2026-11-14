@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-const MODEL = "claude-opus-5-5";
+export const CLAUDE_MODEL = "claude-opus-5-5";
 
 /**
  * Asks Claude for a JSON object matching `schema`. Returns null on timeout,
@@ -21,7 +21,7 @@ export async function askJson(opts: {
   const client = new Anthropic({ apiKey, timeout: opts.timeoutMs, maxRetries: 0 });
   try {
     const response = await client.beta.messages.create({
-      model: MODEL,
+      model: CLAUDE_MODEL,
       max_tokens: 2000,
       system: opts.system,
       messages: [{ role: "user", content: opts.user }],

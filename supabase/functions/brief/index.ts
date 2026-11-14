@@ -3,7 +3,7 @@
 // 10 seconds of the last refresh are skipped.
 
 import { BRIEF_SCHEMA, BRIEF_SYSTEM, buildBriefPrompt, composeBrief } from "../_shared/brief.ts";
-import { askJson } from "../_shared/claude.ts";
+import { askJson, CLAUDE_MODEL } from "../_shared/claude.ts";
 import { metaKey } from "../_shared/muse/client.ts";
 import { reassessIncident } from "../_shared/muse/respond.ts";
 import { adminClient, callerFrom, corsHeaders, json, readIncidentId } from "../_shared/http.ts";
@@ -48,13 +48,6 @@ Deno.serve(async (req) => {
   // Claim the refresh window before the slow call so concurrent callers skip.
   await db.from("incidents").update({ brief_at: new Date().toISOString() }).eq("id", incidentId);
 
-  // Muse Dispatcher (Meta hackathon): the agent reassesses instead of only
-  // rewriting the brief, so a new message can also escalate or add heroes.
-  if (metaKey()) {
-    const result = await reassessIncident(db, incidentId);
-    return json({ status: "updated", source: "muse", result });
-  }
-
   const { data: requester } = await db.from("profiles").select("display_name").eq("id", incident.requester_id).single();
   const requesterName = requester?.display_name || "Someone";
   const { data: eventRows } = await db
@@ -79,14 +72,24 @@ Deno.serve(async (req) => {
   const messages = events.filter((e) => e.kind === "message").map((e) => e.body ?? "").join(" ");
   const danger = incident.call_911_recommended || describesImmediateDanger(messages);
   let brief = typeof raw?.brief === "string" && raw.brief.trim() ? raw.brief.trim().slice(0, 400) : null;
+
+  // Fallback: if Claude gave nothing and a Meta key is set, the Muse agent
+  // reassesses (it writes the brief itself and can escalate or add heroes).
+  if (!brief && metaKey()) {
+    const result = await reassessIncident(db, incidentId, 8_000);
+    if (result) return json({ status: "updated", source: "muse", result });
+  }
+
   if (brief && danger && !/911/.test(brief)) brief += " If anyone is in danger, call 911 now.";
+  const source = brief ? "ai" : "fallback";
   brief ??= composeBrief(requesterName, responders, danger);
 
   await db.from("incidents").update({
     brief,
     brief_at: new Date().toISOString(),
     call_911_recommended: danger,
+    agent_model: source === "ai" ? CLAUDE_MODEL : "rules-only",
   }).eq("id", incidentId);
 
-  return json({ status: "updated", source: raw ? "ai" : "fallback" });
+  return json({ status: "updated", source });
 });
