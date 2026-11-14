@@ -1,6 +1,6 @@
 import { Phone } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Animated, Easing, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Easing, KeyboardAvoidingView, Modal, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Body, Button } from '@/components/ui';
@@ -113,7 +113,7 @@ export function PinSheet({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.sheetWrap} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.sheetWrap} behavior="padding">
         <View style={styles.sheet}>
           <Text style={styles.sheetTitle}>{title}</Text>
           <TextInput
