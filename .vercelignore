@@ -1,2 +1,4 @@
 db/
 README.md
+.env*
+.gitignore
