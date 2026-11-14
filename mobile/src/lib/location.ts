@@ -11,16 +11,20 @@ export interface Coords {
  * caps the fresh lookup.
  */
 export async function getQuickPosition(timeoutMs = 4000): Promise<Coords | null> {
+  // The whole lookup is capped, not just the fresh fix: on Android with no
+  // fix yet, the permission check and last-known lookup can stall too, and an
+  // alert must never wait on them.
+  return Promise.race([lookup(), new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs))]);
+}
+
+async function lookup(): Promise<Coords | null> {
   try {
     const perm = await Location.requestForegroundPermissionsAsync();
     if (perm.status !== 'granted') return null;
     const last = await Location.getLastKnownPositionAsync({ maxAge: 120_000, requiredAccuracy: 200 });
     if (last) return { lat: last.coords.latitude, lng: last.coords.longitude };
-    const fresh = await Promise.race([
-      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
-    ]);
-    return fresh ? { lat: fresh.coords.latitude, lng: fresh.coords.longitude } : null;
+    const fresh = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    return { lat: fresh.coords.latitude, lng: fresh.coords.longitude };
   } catch {
     return null;
   }
