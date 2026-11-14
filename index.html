@@ -164,6 +164,22 @@ section.wrap{padding-top:110px;padding-bottom:110px}
 .places{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:34px}
 .places span{padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid var(--edge);font-size:13px;color:var(--muted)}
 
+/* cities */
+.cities{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:48px}
+.city{padding:32px 28px;display:flex;flex-direction:column;gap:16px}
+.city-top{display:flex;gap:14px;align-items:center}
+.city-flag{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:26px;background:rgba(255,255,255,.07);border:1px solid var(--edge)}
+.city h3{font-size:24px}
+.city small{color:var(--h2);font-weight:600;font-size:13px;letter-spacing:.02em}
+.city p{color:var(--muted);font-size:15.5px}
+.city ul{list-style:none;display:grid;gap:8px;font-size:14.5px;color:rgba(255,255,255,.85)}
+.city li{display:flex;gap:10px;align-items:flex-start}
+.city li::before{content:"";flex:none;width:7px;height:7px;margin-top:8px;border-radius:50%;background:var(--grad)}
+.city .btn{margin-top:auto;align-self:flex-start;color:#fff}
+.cities-more{font-size:16px;margin-top:28px}
+.cities-more a{color:#fff;text-decoration:underline;text-underline-offset:3px}
+@media (max-width:980px){.cities{grid-template-columns:1fr}}
+@media (max-width:620px){.city{padding:26px 20px}.city .btn{width:100%}}
 /* join */
 .join{display:grid;grid-template-columns:1fr 1fr;gap:48px;padding:56px;position:relative;overflow:hidden}
 .join::before{content:"";position:absolute;inset:-40%;background:radial-gradient(closest-side,rgba(232,51,139,.22),transparent);z-index:-1}
@@ -257,7 +273,7 @@ footer{padding:40px 0 56px;color:var(--faint);font-size:14px}
   <div class="wrap">
     <div class="nav glass">
       <a class="brand" href="#top"><img src="favicon.png" alt="">HereO</a>
-      <nav><a href="#how">How it works</a><a href="#hold">Try it</a><a href="#ai">AI coordinator</a><a href="#heroes">Heroes</a><a href="#join" data-tab="waitlist">Waitlist</a></nav>
+      <nav><a href="#how">How it works</a><a href="#hold">Try it</a><a href="#ai">AI coordinator</a><a href="#heroes">Heroes</a><a href="#cities">Cities</a><a href="#join" data-tab="waitlist">Waitlist</a></nav>
       <a class="btn btn-hero" href="#join" data-tab="hero">Become a hero</a>
     </div>
   </div>
@@ -378,6 +394,37 @@ footer{padding:40px 0 56px;color:var(--faint);font-size:14px}
       <div class="glass reveal"><b class="grad">Don't pursue.</b><p>You are there for the person, not the threat. No chasing, no confronting.</p></div>
       <div class="glass reveal"><b class="grad">Call <span class="emerg">999</span>.</b><p>If there's danger, emergency services come first. HereO fills the minutes until they arrive.</p></div>
     </div>
+  </section>
+
+  <section class="wrap" id="cities">
+    <div class="reveal">
+      <div class="eyebrow">Where we're starting</div>
+      <h2 class="sh">Two towns first. <span class="grad">Done properly.</span></h2>
+      <p class="sp">A hero network only works when heroes are close by, so we're launching street by street, with local partners, before we go anywhere else.</p>
+    </div>
+    <div class="cities">
+      <div class="city glass reveal">
+        <div class="city-top"><span class="city-flag">🇬🇧</span><div><h3>Cambridge, UK</h3><small>Hero network pilot · Lent term 2027</small></div></div>
+        <p>Our first hero network. We're recruiting the Founding 100 from colleges, societies, hospitals and the neighbourhoods in between, starting with the walk home around Mill Road and the city centre on Thursday to Saturday nights.</p>
+        <ul>
+          <li>ID-checked, trained student and local heroes</li>
+          <li>Designed around college life, welfare teams and porters</li>
+          <li>Emergency number shown in the app: 999</li>
+        </ul>
+        <a class="btn btn-hero" href="#join" data-tab="hero" data-city="cambridge">Become a Cambridge hero</a>
+      </div>
+      <div class="city glass reveal">
+        <div class="city-top"><span class="city-flag">🇺🇸</span><div><h3>Sarasota, Florida</h3><small>Walks, check-ins &amp; family · early 2027</small></div></div>
+        <p>Our US home. Families and friends are already testing HereO's walk-with-me, timed check-ins and fake call, so the people who love you know you got home, without anyone having to ask.</p>
+        <ul>
+          <li>Live walks your circle can follow</li>
+          <li>Missed check-ins alert your circle automatically</li>
+          <li>Emergency number shown in the app: 911</li>
+        </ul>
+        <a class="btn btn-glass" href="#join" data-tab="waitlist" data-city="sarasota">Join the Sarasota waitlist</a>
+      </div>
+    </div>
+    <p class="sp cities-more">Somewhere else? <a href="#join" data-tab="waitlist">Join the waitlist</a> and tell us where. Every sign-up counts toward where we go next.</p>
   </section>
 
   <section class="wrap" id="join">
@@ -522,7 +569,7 @@ footer{padding:40px 0 56px;color:var(--faint);font-size:14px}
     tabs.forEach(function(b){b.setAttribute('aria-selected',b.getAttribute('data-tab')===kind?'true':'false')});
   }
   tabs.forEach(function(b){b.addEventListener('click',function(){show(b.getAttribute('data-tab'))})});
-  document.querySelectorAll('a[data-tab]').forEach(function(a){a.addEventListener('click',function(){show(a.getAttribute('data-tab'))})});
+  document.querySelectorAll('a[data-tab]').forEach(function(a){a.addEventListener('click',function(){var k=a.getAttribute('data-tab'),c=a.getAttribute('data-city');show(k);if(c){var sel=forms[k].elements.city;sel.value=c;sel.dispatchEvent(new Event('change'))}})});
   var startTab=qs.get('join')||(location.hash==='#waitlist'?'waitlist':location.hash==='#apply'?'hero':'');
   if(startTab==='waitlist'||startTab==='hero'){show(startTab);setTimeout(function(){document.getElementById('join').scrollIntoView()},50)}
 
