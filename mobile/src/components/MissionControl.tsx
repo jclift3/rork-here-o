@@ -11,6 +11,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Glass } from '@/components/Glass';
+import { mapsAvailable } from '@/lib/maps';
 import { colors, fonts, heroGradient, space } from '@/lib/theme';
 
 /** Dark palette for the live screen only; the rest of the app stays light. */
@@ -43,7 +44,7 @@ export function LiveMap({ lat, lng, label, active }: { lat: number | null; lng: 
     : null;
   return (
     <View style={[styles.mapWrap, { height: mapHeight + insets.top }]}>
-      {lat != null && lng != null && region ? (
+      {mapsAvailable && lat != null && lng != null && region ? (
         <MapView
           style={StyleSheet.absoluteFill}
           region={region}

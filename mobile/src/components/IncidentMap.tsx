@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
+import { mapsAvailable } from '@/lib/maps';
 import { colors, radius } from '@/lib/theme';
 
 /**
@@ -9,7 +10,7 @@ import { colors, radius } from '@/lib/theme';
  * volunteers are.
  */
 export function IncidentMap({ lat, lng, label }: { lat: number | null; lng: number | null; label: string }) {
-  if (lat == null || lng == null) return null;
+  if (lat == null || lng == null || !mapsAvailable) return null;
   return (
     <View style={styles.wrap}>
       <MapView
