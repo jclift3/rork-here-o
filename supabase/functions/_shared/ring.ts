@@ -17,7 +17,7 @@ import type { Incident } from "./types.ts";
 export const RING_STRIKE_LIMIT = 2;
 
 export const RING_PUSH: PushOptions = {
-  sound: "hereo-ring.wav",
+  sound: "hereo_ring.wav",
   channelId: "hereo-ring",
   interruptionLevel: "time-sensitive",
 };

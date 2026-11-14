@@ -33,7 +33,7 @@ export async function ensureNotificationPermission(): Promise<boolean> {
       await Notifications.setNotificationChannelAsync('hereo-ring', {
         name: 'HereO ring (someone nearby needs help)',
         importance: Notifications.AndroidImportance.MAX,
-        sound: 'hereo-ring.wav',
+        sound: 'hereo_ring.wav',
         vibrationPattern: [0, 600, 300, 600, 300, 600],
         bypassDnd: true,
         lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,

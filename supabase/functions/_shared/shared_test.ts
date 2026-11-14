@@ -231,7 +231,7 @@ Deno.test("ring messages give a distance, never a name", async () => {
   assert(ringMessage({ distance_m: 1200, travel: "drive" }).body.includes("Park first"));
   assert(duressMessage("Tess Ng").title.startsWith("Tess"));
   const [msg] = buildPushMessages(["ExponentPushToken[a]"], "t", "b", {}, RING_PUSH);
-  assertEquals(msg.sound, "hereo-ring.wav");
+  assertEquals(msg.sound, "hereo_ring.wav");
   assertEquals(msg.channelId, "hereo-ring");
   assertEquals(msg.interruptionLevel, "time-sensitive");
   assertFalse("interruptionLevel" in buildPushMessages(["ExponentPushToken[a]"], "t", "b", {})[0]);
