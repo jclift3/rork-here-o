@@ -35,6 +35,7 @@ export default function Home() {
   const userId = useUserId();
   const { mode, setMode } = useMode();
   const [nearby, setNearby] = useState<number | null>(null);
+  const [noLocation, setNoLocation] = useState(false);
   const [circleCount, setCircleCount] = useState(0);
   const [active, setActive] = useState<string | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -62,6 +63,7 @@ export default function Home() {
     setCircleCount(circle.count ?? 0);
     setAssignments((assigned.data ?? []) as unknown as Assignment[]);
     const pos = await getQuickPosition();
+    setNoLocation(!pos);
     if (pos) {
       const { data } = await supabase.rpc('guardians_nearby_count', {
         p_lat: pos.lat,
@@ -91,7 +93,7 @@ export default function Home() {
     }
   };
 
-  const nearbyText = nearby == null ? 'Checking who’s nearby…' : `${nearby} ${nearby === 1 ? 'hero' : 'heroes'} nearby`;
+  const nearbyText = nearby == null ? (noLocation ? 'Turn on location to see who’s nearby' : 'Checking who’s nearby…') : `${nearby} ${nearby === 1 ? 'hero' : 'heroes'} nearby`;
 
   return (
     <View style={styles.root}>
