@@ -4,7 +4,7 @@ import { Animated, Easing, KeyboardAvoidingView, Modal, StyleSheet, Text, TextIn
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Body, Button } from '@/components/ui';
-import { useRingFlow } from '@/lib/ring';
+import { startCancelWindow, useRingFlow } from '@/lib/ring';
 import { colors, fonts, radius, space } from '@/lib/theme';
 
 /**
@@ -29,6 +29,11 @@ export function AlarmOverlay({
   const [hidden, setHidden] = useState(false);
   const [strobe] = useState(() => new Animated.Value(0));
   const visible = flow.phase === 'countdown' || (flow.siren && !hidden);
+
+  // The cancel window counts from when she can actually see this screen.
+  useEffect(() => {
+    if (flow.phase === 'countdown' && flow.incidentId) startCancelWindow(flow.incidentId);
+  }, [flow.phase, flow.incidentId]);
 
   useEffect(() => {
     if (!visible || !flow.siren) return;

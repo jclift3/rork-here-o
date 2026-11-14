@@ -108,27 +108,56 @@ export function useRingFlow(): RingFlow {
   );
 }
 
-/** Starts the siren (if loud) and the cancel window for a new request. */
+/**
+ * If the cancel screen hasn't appeared this long after a request is made (slow
+ * phone or network), ring anyway: a slow screen must never hold up help.
+ */
+export const RING_MAX_WAIT_MS = 6000;
+let fallback: ReturnType<typeof setTimeout> | null = null;
+
+function clearTimers() {
+  if (countdown) clearInterval(countdown);
+  if (fallback) clearTimeout(fallback);
+  countdown = null;
+  fallback = null;
+}
+
+function ringNow(incidentId: string) {
+  if (flow.incidentId !== incidentId || flow.phase !== 'countdown') return;
+  clearTimers();
+  setFlow({ phase: 'rung', secondsLeft: 0 });
+  ringNearby(incidentId);
+}
+
+/**
+ * Starts the siren (if loud) and arms the cancel window for a new request.
+ * The window itself only counts down once the cancel screen is on screen
+ * (startCancelWindow), so she always gets the full RING_WINDOW_S to cancel.
+ */
 export function armRing(incidentId: string, alarm: AlarmStyle) {
   if (flow.incidentId === incidentId && flow.phase !== 'idle') return;
-  if (countdown) clearInterval(countdown);
+  clearTimers();
   const loud = alarm === 'loud';
   if (loud) startSiren();
   setFlow({ incidentId, phase: 'countdown', secondsLeft: RING_WINDOW_S, siren: loud });
+  fallback = setTimeout(() => ringNow(incidentId), RING_MAX_WAIT_MS);
+}
+
+/** Called by the cancel screen once it is visible: starts the countdown. */
+export function startCancelWindow(incidentId: string) {
+  if (flow.incidentId !== incidentId || flow.phase !== 'countdown' || countdown) return;
+  if (fallback) clearTimeout(fallback);
+  fallback = null;
   countdown = setInterval(() => {
     const left = flow.secondsLeft - 1;
     if (left > 0) return setFlow({ secondsLeft: left });
-    if (countdown) clearInterval(countdown);
-    countdown = null;
-    setFlow({ phase: 'rung', secondsLeft: 0 });
-    ringNearby(incidentId);
+    ringNow(incidentId);
   }, 1000);
 }
 
 /** Ends the local alarm: siren off, window closed. */
 export function disarmRing() {
-  if (countdown) clearInterval(countdown);
-  countdown = null;
+  clearTimers();
   stopSiren();
   setFlow({ incidentId: null, phase: 'idle', secondsLeft: 0, siren: false });
 }
