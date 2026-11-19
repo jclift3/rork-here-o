@@ -15,6 +15,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { askJson, CLAUDE_MODEL } from "./claude.ts";
+import { demoHeroesRespond, demoIds, isDemo, stageDemoHeroes } from "./demo.ts";
 import { runAgent } from "./muse/agent.ts";
 import { metaKey } from "./muse/client.ts";
 import { postNotes, recordDecisions, toTriage } from "./muse/respond.ts";
@@ -194,13 +195,22 @@ async function sendGuardians(
 ): Promise<{ triage: Triage; source: "ai" | "fallback"; count: number }> {
   const deepLink = { incident_id: incident.id, url: `hereo://incident/${incident.id}` };
   let candidates: GuardianCandidate[] = [];
-  if (incident.lat != null && incident.lng != null) {
+  // Review and demo accounts are answered only by demo heroes; see demo.ts.
+  const demo = await isDemo(db, incident.requester_id);
+  if (demo) {
+    candidates = await stageDemoHeroes(db, incident);
+  } else if (incident.lat != null && incident.lng != null) {
     const { data, error } = await db.rpc("nearby_guardians", {
       p_lat: incident.lat,
       p_lng: incident.lng,
       p_radius_m: SEARCH_RADIUS_M,
       p_her_o_only: incident.mode === "her_o",
-      p_exclude: [incident.requester_id, ...excludeIds, ...(await blockedIds(db, incident.requester_id))],
+      p_exclude: [
+        incident.requester_id,
+        ...excludeIds,
+        ...(await blockedIds(db, incident.requester_id)),
+        ...(await demoIds(db)),
+      ],
       p_limit: CANDIDATE_LIMIT,
     });
     if (error) console.error("nearby_guardians failed", error);
@@ -277,6 +287,7 @@ async function sendGuardians(
       )
     ));
   }
+  if (demo) await demoHeroesRespond(db, incident.id, chosen.map((g) => g.user_id));
   return { triage, source: aiTriage ? "ai" : "fallback", count: chosen.length };
 }
 

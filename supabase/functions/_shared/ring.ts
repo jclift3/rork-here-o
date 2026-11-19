@@ -12,6 +12,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildPushMessages, type PushOptions, sendPush } from "./push.ts";
+import { demoIds, isDemo } from "./demo.ts";
 import { blockedIds, localizeEmergency } from "./safety.ts";
 import type { Incident } from "./types.ts";
 
@@ -36,6 +37,7 @@ export type RingResult =
   | { status: "already_rung_or_closed" }
   | { status: "limited"; strikes: number }
   | { status: "no_location" }
+  | { status: "demo" }
   | { status: "rung"; rung: number };
 
 export function describeRingDistance(distanceM: number): string {
@@ -69,6 +71,8 @@ export function duressMessage(name: string): { title: string; body: string } {
 
 /** Rings neighbours for the caller's open request, once. */
 export async function sendRing(db: SupabaseClient, incidentId: string, requesterId: string): Promise<RingResult> {
+  // Review and demo accounts never ring real people.
+  if (await isDemo(db, requesterId)) return { status: "demo" };
   const { data: strikes, error: strikeError } = await db.rpc("ring_strikes", { p_user: requesterId });
   if (strikeError) throw strikeError;
   const { data: secret } = await db.from("ring_secrets").select("banned_at").eq("user_id", requesterId).maybeSingle();
@@ -104,6 +108,7 @@ export async function sendRing(db: SupabaseClient, incidentId: string, requester
     ...(circle ?? []).map((r) => r.member_id as string),
     ...(responders ?? []).map((r) => r.user_id as string),
     ...(await blockedIds(db, requesterId)),
+    ...(await demoIds(db)),
   ];
   const { data, error: matchError } = await db.rpc("nearby_ring_responders", {
     p_lat: incident.lat,

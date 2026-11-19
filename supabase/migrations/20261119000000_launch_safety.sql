@@ -151,3 +151,13 @@ end $$;
 
 revoke execute on function public.accept_terms(text) from public, anon;
 grant execute on function public.accept_terms(text) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Review and demo accounts
+-- ---------------------------------------------------------------------------
+
+-- Accounts for App Review and demos. A demo account's help request is
+-- answered only by demo heroes, who are placed near it by the dispatcher; no
+-- real person is alerted or rung, and demo heroes are never sent to real
+-- people. Set by the HereO team (service role) only.
+alter table public.profiles add column if not exists is_demo boolean not null default false;
