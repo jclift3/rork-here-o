@@ -12,7 +12,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildPushMessages, type PushOptions, sendPush } from "./push.ts";
-import { localizeEmergency } from "./safety.ts";
+import { blockedIds, localizeEmergency } from "./safety.ts";
 import type { Incident } from "./types.ts";
 
 export const RING_STRIKE_LIMIT = 2;
@@ -103,6 +103,7 @@ export async function sendRing(db: SupabaseClient, incidentId: string, requester
     requesterId,
     ...(circle ?? []).map((r) => r.member_id as string),
     ...(responders ?? []).map((r) => r.user_id as string),
+    ...(await blockedIds(db, requesterId)),
   ];
   const { data, error: matchError } = await db.rpc("nearby_ring_responders", {
     p_lat: incident.lat,

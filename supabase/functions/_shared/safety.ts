@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 // Deterministic guard rails that sit on both sides of the model. The model can
 // make a response better; these rules make sure it can never make it worse.
 
@@ -51,4 +53,14 @@ export function localizeEmergency(
 ): string {
   const number = emergencyNumber(lat, lng);
   return number === "911" ? text : text.replace(/\b911\b/g, number);
+}
+
+/** People kept apart from this user by a block, in either direction. Never sent to or rung for them. */
+export async function blockedIds(db: SupabaseClient, userId: string): Promise<string[]> {
+  const { data, error } = await db.rpc("blocked_ids", { p_user: userId });
+  if (error) {
+    console.error("blocked_ids failed", error);
+    return [];
+  }
+  return (data ?? []) as string[];
 }

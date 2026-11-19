@@ -28,7 +28,7 @@ import {
   TRIAGE_SCHEMA,
   TRIAGE_SYSTEM,
 } from "./triage.ts";
-import { localizeEmergency } from "./safety.ts";
+import { blockedIds, localizeEmergency } from "./safety.ts";
 import type { GuardianCandidate, Incident, Triage } from "./types.ts";
 
 const SEARCH_RADIUS_M = 1500;
@@ -200,7 +200,7 @@ async function sendGuardians(
       p_lng: incident.lng,
       p_radius_m: SEARCH_RADIUS_M,
       p_her_o_only: incident.mode === "her_o",
-      p_exclude: [incident.requester_id, ...excludeIds],
+      p_exclude: [incident.requester_id, ...excludeIds, ...(await blockedIds(db, incident.requester_id))],
       p_limit: CANDIDATE_LIMIT,
     });
     if (error) console.error("nearby_guardians failed", error);
