@@ -62,6 +62,36 @@ export default function Profile() {
     );
   };
 
+  const signOut = async () => {
+    await stopGuardianBackgroundLocation();
+    await stopTripBackgroundLocation();
+    await supabase.auth.signOut();
+    router.replace('/welcome');
+  };
+
+  // App Store guideline 5.1.1(v): the account and its data can be deleted in the app.
+  const confirmDelete = () => {
+    Alert.alert(
+      'Delete your account?',
+      'This permanently deletes your HereO account: your profile, circle, trips, help requests, hero status and settings. It can’t be undone.',
+      [
+        { text: 'Keep my account', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const { error: e } = await supabase.functions.invoke('delete-account', { body: { confirm: 'DELETE' } });
+            if (e) {
+              Alert.alert('Couldn’t delete your account', friendlyError(e));
+              return;
+            }
+            await signOut();
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
@@ -118,12 +148,9 @@ export default function Profile() {
         onPress={() => router.push('/verify')}
       />
 
-      <Button label="Sign out" variant="ghost" onPress={async () => {
-          await stopGuardianBackgroundLocation();
-          await stopTripBackgroundLocation();
-          await supabase.auth.signOut();
-          router.replace('/welcome');
-        }} />
+      <SectionLabel>Account</SectionLabel>
+      <Button label="Sign out" variant="ghost" onPress={signOut} />
+      <Button label="Delete account" variant="ghost" textColor={colors.alert} onPress={confirmDelete} />
     </Screen>
   );
 }

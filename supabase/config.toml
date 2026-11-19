@@ -34,6 +34,11 @@ import_map = "./functions/deno.json"
 verify_jwt = false
 import_map = "./functions/deno.json"
 
+# Deletes the caller's own account (App Store 5.1.1(v)).
+[functions.delete-account]
+verify_jwt = true
+import_map = "./functions/deno.json"
+
 # Retired: answers 410 so older builds can't skip email verification.
 [functions.sign-up]
 verify_jwt = false
