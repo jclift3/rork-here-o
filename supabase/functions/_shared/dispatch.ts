@@ -28,6 +28,7 @@ import {
   TRIAGE_SCHEMA,
   TRIAGE_SYSTEM,
 } from "./triage.ts";
+import { localizeEmergency } from "./safety.ts";
 import type { GuardianCandidate, Incident, Triage } from "./types.ts";
 
 const SEARCH_RADIUS_M = 1500;
@@ -117,7 +118,7 @@ export async function dispatchIncident(
 
   // A missed check-in stops here: no model call, no guardians yet.
   if (incident.trigger === "check_in_missed") {
-    const triage = fallbackTriage(incident, [], requesterName);
+    const triage = localizeTriage(fallbackTriage(incident, [], requesterName), incident);
     await recordTriage(db, incident.id, triage, "fallback");
     return {
       status: "dispatched" as const,
@@ -241,7 +242,7 @@ async function sendGuardians(
     }
   }
   await db.from("incidents").update({ agent_model: model }).eq("id", incident.id);
-  const triage: Triage = aiTriage ?? fallbackTriage(incident, candidates, requesterName);
+  const triage: Triage = localizeTriage(aiTriage ?? fallbackTriage(incident, candidates, requesterName), incident);
 
   const byId = new Map(candidates.map((c) => [c.user_id, c]));
   const chosen = triage.guardian_roles.slice(0, MAX_GUARDIANS).flatMap((r) => {
@@ -289,4 +290,14 @@ async function recordTriage(db: SupabaseClient, incidentId: string, triage: Tria
     triage_source: source,
   }).eq("id", incidentId);
   await db.from("incident_events").insert({ incident_id: incidentId, kind: "triaged", body: triage.summary });
+}
+
+/** Swaps 911 for the local number (999 in the UK) in everything people read. */
+function localizeTriage(triage: Triage, incident: Pick<Incident, "lat" | "lng">): Triage {
+  const l = (t: string) => localizeEmergency(t, incident.lat, incident.lng);
+  return {
+    ...triage,
+    summary: l(triage.summary),
+    guardian_roles: triage.guardian_roles.map((r) => ({ ...r, role: l(r.role) })),
+  };
 }

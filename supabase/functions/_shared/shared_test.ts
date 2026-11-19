@@ -2,7 +2,7 @@ import { assert, assertEquals, assertFalse, assertMatch } from "@std/assert";
 import { composeBrief } from "./brief.ts";
 import { minutesAway } from "./geo.ts";
 import { buildPushMessages, sendPush } from "./push.ts";
-import { describesImmediateDanger, isSafeRole } from "./safety.ts";
+import { describesImmediateDanger, emergencyNumber, isSafeRole, localizeEmergency } from "./safety.ts";
 import { buildTriagePrompt, fallbackTriage, finalizeTriage, MAX_GUARDIANS } from "./triage.ts";
 import type { GuardianCandidate } from "./types.ts";
 
@@ -235,4 +235,18 @@ Deno.test("ring messages give a distance, never a name", async () => {
   assertEquals(msg.channelId, "hereo-ring");
   assertEquals(msg.interruptionLevel, "time-sensitive");
   assertFalse("interruptionLevel" in buildPushMessages(["ExponentPushToken[a]"], "t", "b", {})[0]);
+});
+
+Deno.test("UK text says 999, US text keeps 911", () => {
+  const cambridge = { lat: 52.2053, lng: 0.1218 };
+  const sarasota = { lat: 27.3364, lng: -82.5307 };
+  assertEquals(emergencyNumber(cambridge.lat, cambridge.lng), "999");
+  assertEquals(emergencyNumber(sarasota.lat, sarasota.lng), "911");
+  assertEquals(
+    localizeEmergency("If anyone is in danger, call 911 now.", cambridge.lat, cambridge.lng),
+    "If anyone is in danger, call 999 now.",
+  );
+  assertEquals(localizeEmergency("Call 911.", sarasota.lat, sarasota.lng), "Call 911.");
+  // Numbers that merely contain 911 are left alone.
+  assertEquals(localizeEmergency("Flat 9110", cambridge.lat, cambridge.lng), "Flat 9110");
 });

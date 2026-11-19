@@ -12,6 +12,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildPushMessages, type PushOptions, sendPush } from "./push.ts";
+import { localizeEmergency } from "./safety.ts";
 import type { Incident } from "./types.ts";
 
 export const RING_STRIKE_LIMIT = 2;
@@ -164,6 +165,7 @@ export async function ringEnded(
         ?.private_profiles?.push_token
     );
     const m = duressMessage(requester?.display_name || "Someone");
+    m.body = localizeEmergency(m.body, incident.lat, incident.lng);
     const notified = await sendPush(
       buildPushMessages(tokens, m.title, m.body, { incident_id: incidentId, url: `hereo://incident/${incidentId}` }),
       db,
