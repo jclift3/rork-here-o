@@ -37,7 +37,7 @@ export default function Help() {
       <TextField
         value={note}
         onChangeText={setNote}
-        placeholder="e.g. Someone is following me on 5th St"
+        placeholder="e.g. Someone is following me near the station"
         multiline
         maxLength={500}
         style={{ minHeight: 96, paddingTop: 14, textAlignVertical: 'top' }}
