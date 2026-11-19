@@ -1,15 +1,14 @@
 import type { BottomTabBarProps } from 'expo-router/tabs';
 import { router } from 'expo-router';
 import { Compass, House, MessageCircle, User } from 'lucide-react-native';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Glass } from './Glass';
 import { HoldToHelp } from './HoldToHelp';
-import { raiseAlert } from '@/lib/incidents';
+import { alertSendFailed, raiseAlert } from '@/lib/incidents';
 import { useMode } from '@/lib/mode';
 import { useUserId } from '@/lib/session';
-import { friendlyError } from '@/lib/supabase';
 import { colors } from '@/lib/theme';
 
 const ICONS = { home: House, discover: Compass, messages: MessageCircle, profile: User } as const;
@@ -29,7 +28,7 @@ export function HelpTabBar({ state, navigation }: BottomTabBarProps) {
       const id = await raiseAlert({ userId, mode, trigger: 'hold' });
       router.push({ pathname: '/incident/[id]', params: { id } });
     } catch (err) {
-      Alert.alert("Couldn't send your alert", `${friendlyError(err)}\n\nIf you are in danger, call 911.`);
+      alertSendFailed(err);
     }
   };
 

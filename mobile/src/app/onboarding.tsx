@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { Body, Button, Card, Screen, SectionLabel, TextField, Title } from '@/components/ui';
 import { startGuardianBackgroundLocation } from '@/lib/backgroundLocation';
+import { useEmergencyNumber } from '@/lib/emergency';
 import { saveRingSettings, type Travel } from '@/lib/ring';
 import { useSession } from '@/lib/session';
 import { friendlyError, supabase } from '@/lib/supabase';
@@ -13,6 +14,7 @@ export default function Onboarding() {
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const emergency = useEmergencyNumber();
   const [step, setStep] = useState<'name' | 'ring'>('name');
 
   const save = async () => {
@@ -85,7 +87,7 @@ export default function Onboarding() {
         <Body>1. Hold the gradient button for two seconds, from any screen.</Body>
         <Body>2. Your circle gets your location right away.</Body>
         <Body>3. Nearby heroes get a short, specific job from HereO’s AI coordinator.</Body>
-        <Body>4. Everyone sees one live brief. Call 911 is always one tap away.</Body>
+        <Body>4. Everyone sees one live brief. Calling {emergency} is always one tap away.</Body>
       </Card>
     </Screen>
   );

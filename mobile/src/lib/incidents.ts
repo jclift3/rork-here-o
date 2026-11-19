@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Platform } from 'react-native';
 
+import { currentEmergencyNumber, type EmergencyNumber } from './emergency';
 import { getQuickPosition } from './location';
 import { armRing, clearDuress, currentAlarmStyle } from './ring';
 import { isSirenPlaying, startSiren, stopSiren } from './siren';
@@ -65,8 +66,9 @@ export async function raiseAlert(opts: {
 
 /** Shown when a help request could not be created. The siren keeps going until she stops it here. */
 export function alertSendFailed(err: unknown) {
-  Alert.alert("Couldn't send your alert", `${friendlyError(err)}\n\nIf you are in danger, call 911.`, [
-    { text: 'Call 911', onPress: () => Linking.openURL('tel:911') },
+  const number = currentEmergencyNumber();
+  Alert.alert("Couldn't send your alert", `${friendlyError(err)}\n\nIf you are in danger, call ${number}.`, [
+    { text: `Call ${number}`, onPress: () => Linking.openURL(`tel:${number}`) },
     ...(isSirenPlaying() ? [{ text: 'Stop the siren', onPress: stopSiren }] : []),
     { text: 'OK', style: 'cancel' as const },
   ]);
@@ -117,8 +119,13 @@ export async function updateIncidentLocation(incidentId: string, lat: number, ln
     .eq('id', incidentId);
 }
 
-/** Opens the phone dialer on 911 and records that it happened. */
-export async function call911(incidentId: string | null, userId: string, isRequester: boolean, number: '911' | '999' = '911') {
+/** Opens the phone dialer on the local emergency number (999 in the UK, 911 in the US) and records it. */
+export async function call911(
+  incidentId: string | null,
+  userId: string,
+  isRequester: boolean,
+  number: EmergencyNumber = currentEmergencyNumber(),
+) {
   Linking.openURL(`tel:${number}`);
   if (!incidentId) return;
   await supabase

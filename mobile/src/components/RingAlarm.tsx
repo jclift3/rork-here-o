@@ -9,7 +9,7 @@ import { colors, fonts, radius, space } from '@/lib/theme';
 
 /**
  * Full screen while her siren plays: a red and white strobe, the cancel
- * window, and the two things she needs (call 911, I'm OK). "Hide" shows the
+ * window, and the two things she needs (call 999 / 911, I'm OK). "Hide" shows the
  * request screen underneath; the siren keeps going until she ends it.
  */
 export function AlarmOverlay({

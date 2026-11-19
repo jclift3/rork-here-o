@@ -1,5 +1,7 @@
 import * as Location from 'expo-location';
 
+import { noteEmergencyPosition } from './emergency';
+
 export interface Coords {
   lat: number;
   lng: number;
@@ -14,7 +16,9 @@ export async function getQuickPosition(timeoutMs = 4000): Promise<Coords | null>
   // The whole lookup is capped, not just the fresh fix: on Android with no
   // fix yet, the permission check and last-known lookup can stall too, and an
   // alert must never wait on them.
-  return Promise.race([lookup(), new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs))]);
+  const pos = await Promise.race([lookup(), new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs))]);
+  if (pos) noteEmergencyPosition(pos.lat, pos.lng);
+  return pos;
 }
 
 async function lookup(): Promise<Coords | null> {

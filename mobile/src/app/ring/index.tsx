@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 
 import { Body, Button, Screen, Title } from '@/components/ui';
+import { useEmergencyNumber } from '@/lib/emergency';
 import { call911, raiseAlert } from '@/lib/incidents';
 import { isSirenPlaying, stopSiren } from '@/lib/siren';
 import { useMode } from '@/lib/mode';
@@ -18,6 +19,7 @@ export default function RingNow() {
   const { mode } = useMode();
   const started = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const emergency = useEmergencyNumber();
 
   useEffect(() => {
     if (loading || started.current) return;
@@ -37,8 +39,8 @@ export default function RingNow() {
       {error && (
         <>
           <Body>{error}</Body>
-          <Body>If you are in danger, call 911.</Body>
-          <Button label="Call 911" variant="alert" tall onPress={() => call911(null, session?.user.id ?? '', true)} />
+          <Body>If you are in danger, call {emergency}.</Body>
+          <Button label={`Call ${emergency}`} variant="alert" tall onPress={() => call911(null, session?.user.id ?? '', true, emergency)} />
           {isSirenPlaying() && <Button label="Stop the siren" variant="outline" onPress={stopSiren} />}
           <Button label="Back to HereO" variant="ghost" onPress={() => router.replace('/home')} />
         </>
