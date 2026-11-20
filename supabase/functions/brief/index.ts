@@ -7,7 +7,7 @@ import { askJson, CLAUDE_MODEL } from "../_shared/claude.ts";
 import { metaKey } from "../_shared/muse/client.ts";
 import { reassessIncident } from "../_shared/muse/respond.ts";
 import { adminClient, callerFrom, corsHeaders, json, readIncidentId } from "../_shared/http.ts";
-import { describesImmediateDanger } from "../_shared/safety.ts";
+import { describesImmediateDanger, localizeEmergency } from "../_shared/safety.ts";
 import type { EventView, Incident, ResponderView } from "../_shared/types.ts";
 
 const MIN_INTERVAL_MS = 10_000;
@@ -80,9 +80,10 @@ Deno.serve(async (req) => {
     if (result) return json({ status: "updated", source: "muse", result });
   }
 
-  if (brief && danger && !/911/.test(brief)) brief += " If anyone is in danger, call 911 now.";
+  if (brief && danger && !/\b(911|999|112)\b/.test(brief)) brief += " If anyone is in danger, call 911 now.";
   const source = brief ? "ai" : "fallback";
   brief ??= composeBrief(requesterName, responders, danger);
+  brief = localizeEmergency(brief, incident.lat, incident.lng);
 
   await db.from("incidents").update({
     brief,

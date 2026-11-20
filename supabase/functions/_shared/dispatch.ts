@@ -15,6 +15,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { askJson, CLAUDE_MODEL } from "./claude.ts";
+import { demoHeroesRespond, demoIds, isDemo, stageDemoHeroes } from "./demo.ts";
 import { runAgent } from "./muse/agent.ts";
 import { metaKey } from "./muse/client.ts";
 import { postNotes, recordDecisions, toTriage } from "./muse/respond.ts";
@@ -28,6 +29,7 @@ import {
   TRIAGE_SCHEMA,
   TRIAGE_SYSTEM,
 } from "./triage.ts";
+import { blockedIds, localizeEmergency } from "./safety.ts";
 import type { GuardianCandidate, Incident, Triage } from "./types.ts";
 
 const SEARCH_RADIUS_M = 1500;
@@ -117,7 +119,7 @@ export async function dispatchIncident(
 
   // A missed check-in stops here: no model call, no guardians yet.
   if (incident.trigger === "check_in_missed") {
-    const triage = fallbackTriage(incident, [], requesterName);
+    const triage = localizeTriage(fallbackTriage(incident, [], requesterName), incident);
     await recordTriage(db, incident.id, triage, "fallback");
     return {
       status: "dispatched" as const,
@@ -193,13 +195,22 @@ async function sendGuardians(
 ): Promise<{ triage: Triage; source: "ai" | "fallback"; count: number }> {
   const deepLink = { incident_id: incident.id, url: `hereo://incident/${incident.id}` };
   let candidates: GuardianCandidate[] = [];
-  if (incident.lat != null && incident.lng != null) {
+  // Review and demo accounts are answered only by demo heroes; see demo.ts.
+  const demo = await isDemo(db, incident.requester_id);
+  if (demo) {
+    candidates = await stageDemoHeroes(db, incident);
+  } else if (incident.lat != null && incident.lng != null) {
     const { data, error } = await db.rpc("nearby_guardians", {
       p_lat: incident.lat,
       p_lng: incident.lng,
       p_radius_m: SEARCH_RADIUS_M,
       p_her_o_only: incident.mode === "her_o",
-      p_exclude: [incident.requester_id, ...excludeIds],
+      p_exclude: [
+        incident.requester_id,
+        ...excludeIds,
+        ...(await blockedIds(db, incident.requester_id)),
+        ...(await demoIds(db)),
+      ],
       p_limit: CANDIDATE_LIMIT,
     });
     if (error) console.error("nearby_guardians failed", error);
@@ -241,7 +252,7 @@ async function sendGuardians(
     }
   }
   await db.from("incidents").update({ agent_model: model }).eq("id", incident.id);
-  const triage: Triage = aiTriage ?? fallbackTriage(incident, candidates, requesterName);
+  const triage: Triage = localizeTriage(aiTriage ?? fallbackTriage(incident, candidates, requesterName), incident);
 
   const byId = new Map(candidates.map((c) => [c.user_id, c]));
   const chosen = triage.guardian_roles.slice(0, MAX_GUARDIANS).flatMap((r) => {
@@ -276,6 +287,7 @@ async function sendGuardians(
       )
     ));
   }
+  if (demo) await demoHeroesRespond(db, incident.id, chosen.map((g) => g.user_id));
   return { triage, source: aiTriage ? "ai" : "fallback", count: chosen.length };
 }
 
@@ -289,4 +301,14 @@ async function recordTriage(db: SupabaseClient, incidentId: string, triage: Tria
     triage_source: source,
   }).eq("id", incidentId);
   await db.from("incident_events").insert({ incident_id: incidentId, kind: "triaged", body: triage.summary });
+}
+
+/** Swaps 911 for the local number (999 in the UK) in everything people read. */
+function localizeTriage(triage: Triage, incident: Pick<Incident, "lat" | "lng">): Triage {
+  const l = (t: string) => localizeEmergency(t, incident.lat, incident.lng);
+  return {
+    ...triage,
+    summary: l(triage.summary),
+    guardian_roles: triage.guardian_roles.map((r) => ({ ...r, role: l(r.role) })),
+  };
 }

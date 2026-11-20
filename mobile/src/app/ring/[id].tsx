@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IncidentMap } from '@/components/IncidentMap';
 import { Body, Button, Card, Pill, Screen, Title } from '@/components/ui';
+import { useEmergencyNumber } from '@/lib/emergency';
 import { getQuickPosition } from '@/lib/location';
 import {
   compassDirection,
@@ -85,6 +86,7 @@ function useWhere(card: RingCard) {
 function ActiveRing({ card, reload }: { card: RingCard; reload: () => void }) {
   const { address, fromMe } = useWhere(card);
   const [busy, setBusy] = useState(false);
+  const emergency = useEmergencyNumber();
   const drive = card.travel === 'drive';
 
   const directions = () => {
@@ -137,7 +139,7 @@ function ActiveRing({ card, reload }: { card: RingCard; reload: () => void }) {
           {drive && <Body>Park first.</Body>}
           <Body>Go with at least one other person if you can.</Body>
           <Body>Knock and call out. Stay with them until they’re OK.</Body>
-          <Body>Call 911 if anyone sees danger. Never confront anyone.</Body>
+          <Body>Call {emergency} if anyone sees danger. Never confront anyone.</Body>
         </Card>
         {card.my_status === 'en_route' && (
           <Button label={drive ? 'Driving directions' : 'Walking directions'} variant="outline" icon={<Navigation size={18} color={colors.ink} />} onPress={directions} />
@@ -155,12 +157,12 @@ function ActiveRing({ card, reload }: { card: RingCard; reload: () => void }) {
           <Button label="I’m here" variant="hero" tall style={{ flex: 2 }} loading={busy} onPress={() => respond('on_scene')} />
         )}
         <Button
-          label="911"
+          label={emergency}
           variant="alert"
           tall
           style={{ flex: 1 }}
           icon={<Phone color={colors.paper} size={18} />}
-          onPress={() => Linking.openURL('tel:911')}
+          onPress={() => Linking.openURL(`tel:${emergency}`)}
         />
       </View>
     </SafeAreaView>

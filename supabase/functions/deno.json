@@ -7,7 +7,7 @@
   },
   "tasks": {
     "test": "deno test --allow-env --allow-read --allow-net _shared/",
-    "check": "deno check dispatch/index.ts brief/index.ts check-ins/index.ts sign-up/index.ts ring/index.ts muse-voice/index.ts muse-scene/index.ts muse-eval/index.ts"
+    "check": "deno check dispatch/index.ts brief/index.ts check-ins/index.ts sign-up/index.ts ring/index.ts delete-account/index.ts muse-voice/index.ts muse-scene/index.ts muse-eval/index.ts"
   },
   "imports": {
     "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@0.131.0",

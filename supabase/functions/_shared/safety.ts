@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 // Deterministic guard rails that sit on both sides of the model. The model can
 // make a response better; these rules make sure it can never make it worse.
 
@@ -32,3 +34,33 @@ export function isSafeRole(role: string): boolean {
 }
 
 export const GUARDIAN_CONDUCT = "Be present. Don't pursue. Call 911 for danger.";
+
+/** UK (and Ireland) use 999/112; everywhere else in our launch plan uses 911. */
+export function emergencyNumber(lat: number | null | undefined, lng: number | null | undefined): "999" | "911" {
+  if (lat == null || lng == null) return "911";
+  const inBritishIsles = lat > 49.8 && lat < 61 && lng > -11 && lng < 2.1;
+  return inBritishIsles ? "999" : "911";
+}
+
+/**
+ * Text written for people says "911"; in the UK it must say "999". Applied to
+ * every brief, job and push before it is stored or sent.
+ */
+export function localizeEmergency(
+  text: string,
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+): string {
+  const number = emergencyNumber(lat, lng);
+  return number === "911" ? text : text.replace(/\b911\b/g, number);
+}
+
+/** People kept apart from this user by a block, in either direction. Never sent to or rung for them. */
+export async function blockedIds(db: SupabaseClient, userId: string): Promise<string[]> {
+  const { data, error } = await db.rpc("blocked_ids", { p_user: userId });
+  if (error) {
+    console.error("blocked_ids failed", error);
+    return [];
+  }
+  return (data ?? []) as string[];
+}

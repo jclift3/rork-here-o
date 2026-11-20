@@ -7,6 +7,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { IncidentMap } from '@/components/IncidentMap';
 import { Mascot } from '@/components/Mascot';
 import { Body, Button, Card, Pill, Screen, Title } from '@/components/ui';
+import { useEmergencyNumber } from '@/lib/emergency';
 import { call911, raiseAlert } from '@/lib/incidents';
 import { watchPosition } from '@/lib/location';
 import { useUserId } from '@/lib/session';
@@ -52,6 +53,7 @@ export default function WalkScreen() {
 function WalkerView({ walk, userId, now, reload }: { walk: Walk; userId: string; now: number; reload: () => void }) {
   const active = walk.status === 'active';
   const [busy, setBusy] = useState<string | null>(null);
+  const emergency = useEmergencyNumber();
   const hasCircle = useHasCircle(userId);
 
   // Share position with the circle while the walk is on.
@@ -183,7 +185,7 @@ function WalkerView({ walk, userId, now, reload }: { walk: Walk; userId: string;
         onPress={() => run('extend', () => extendWalk(walk))}
       />
       <Button label="Get help now" variant="hero" tall loading={busy === 'help'} onPress={getHelp} />
-      <Button label="Call 911" variant="alert" onPress={() => call911(null, userId, true)} />
+      <Button label={`Call ${emergency}`} variant="alert" onPress={() => call911(null, userId, true, emergency)} />
       <Button
         label={`Cancel ${TRIP_KINDS[walk.kind].noun}`}
         variant="ghost"
@@ -195,6 +197,7 @@ function WalkerView({ walk, userId, now, reload }: { walk: Walk; userId: string;
 }
 
 function FollowerView({ walk, userId, now }: { walk: Walk; userId: string; now: number }) {
+  const emergency = useEmergencyNumber();
   const name = walk.profiles?.display_name?.split(' ')[0] || 'They';
   const late = walk.status === 'active' && new Date(walk.due_at).getTime() < now;
   const statusLine =
@@ -238,8 +241,8 @@ function FollowerView({ walk, userId, now }: { walk: Walk; userId: string; now: 
       )}
       {walk.status === 'active' && (
         <>
-          <Body muted>If you think {name} is in danger right now, call 911.</Body>
-          <Button label="Call 911" variant="alert" onPress={() => call911(null, userId, false)} />
+          <Body muted>If you think {name} is in danger right now, call {emergency}.</Body>
+          <Button label={`Call ${emergency}`} variant="alert" onPress={() => call911(null, userId, false, emergency)} />
         </>
       )}
     </Screen>

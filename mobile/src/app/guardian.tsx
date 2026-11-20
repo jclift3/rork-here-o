@@ -4,14 +4,15 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Body, Button, Card, Screen, SectionLabel, Title } from '@/components/ui';
+import { useEmergencyNumber } from '@/lib/emergency';
 import { useSession } from '@/lib/session';
 import { friendlyError, supabase } from '@/lib/supabase';
 import { colors, fonts, space } from '@/lib/theme';
 
-const CODE = [
+const code = (emergency: string) => [
   ['Be present', 'Your job is to show up, be seen, and stay with the person until they are safe.'],
   ['Never pursue', "Don't chase, confront, follow, or restrain anyone. Distance is safety for you and them."],
-  ['911 first for danger', 'Weapons, violence, or a medical emergency: call 911 before anything else.'],
+  [`${emergency} first for danger`, `Weapons, violence, or a medical emergency: call ${emergency} before anything else.`],
   ['Calm is contagious', 'Low voice, open hands, give space. Ask what they need.'],
   ['Privacy', 'What you see in an incident stays in the incident. No photos, no posts.'],
 ] as const;
@@ -21,6 +22,7 @@ export default function Guardian() {
   const { session, profile, refreshProfile } = useSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const emergency = useEmergencyNumber();
 
   const accept = async () => {
     if (!session) return;
@@ -49,7 +51,7 @@ export default function Guardian() {
       </Body>
       <SectionLabel>Code of conduct</SectionLabel>
       <Card style={{ gap: space.md }}>
-        {CODE.map(([title, detail]) => (
+        {code(emergency).map(([title, detail]) => (
           <View key={title}>
             <Text style={styles.rule}>{title}</Text>
             <Body muted>{detail}</Body>

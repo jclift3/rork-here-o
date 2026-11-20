@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { Avatar, Body, Button, Card, Pill, Screen, SectionLabel, TextField, Title } from '@/components/ui';
 import {
@@ -11,6 +11,8 @@ import {
   stopTripBackgroundLocation,
 } from '@/lib/backgroundLocation';
 import { getQuickPosition } from '@/lib/location';
+import { PRIVACY_URL, TERMS_URL } from '@/lib/legal';
+import { useBlocked } from '@/lib/reports';
 import { useSession } from '@/lib/session';
 import { friendlyError, supabase } from '@/lib/supabase';
 import { colors, fonts, space } from '@/lib/theme';
@@ -56,6 +58,36 @@ export default function Profile() {
             if (result === 'denied') {
               Alert.alert('Location set to While Using', 'HereO can reach you while the app is open. You can choose Always in Settings.');
             }
+          },
+        },
+      ],
+    );
+  };
+
+  const signOut = async () => {
+    await stopGuardianBackgroundLocation();
+    await stopTripBackgroundLocation();
+    await supabase.auth.signOut();
+    router.replace('/welcome');
+  };
+
+  // App Store guideline 5.1.1(v): the account and its data can be deleted in the app.
+  const confirmDelete = () => {
+    Alert.alert(
+      'Delete your account?',
+      'This permanently deletes your HereO account: your profile, circle, trips, help requests, hero status and settings. It can’t be undone.',
+      [
+        { text: 'Keep my account', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const { error: e } = await supabase.functions.invoke('delete-account', { body: { confirm: 'DELETE' } });
+            if (e) {
+              Alert.alert('Couldn’t delete your account', friendlyError(e));
+              return;
+            }
+            await signOut();
           },
         },
       ],
@@ -118,12 +150,13 @@ export default function Profile() {
         onPress={() => router.push('/verify')}
       />
 
-      <Button label="Sign out" variant="ghost" onPress={async () => {
-          await stopGuardianBackgroundLocation();
-          await stopTripBackgroundLocation();
-          await supabase.auth.signOut();
-          router.replace('/welcome');
-        }} />
+      {session && <BlockedSection userId={session.user.id} />}
+
+      <SectionLabel>Account</SectionLabel>
+      <LinkRow title="Terms of service" detail="hereo.app/terms" onPress={() => Linking.openURL(TERMS_URL)} />
+      <LinkRow title="Privacy policy" detail="hereo.app/privacy" onPress={() => Linking.openURL(PRIVACY_URL)} />
+      <Button label="Sign out" variant="ghost" onPress={signOut} />
+      <Button label="Delete account" variant="ghost" textColor={colors.alert} onPress={confirmDelete} />
     </Screen>
   );
 }
@@ -391,3 +424,32 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   rowTitle: { fontFamily: fonts.displayMedium, fontSize: 17, color: colors.ink },
 });
+
+/** People you've blocked. Unblocking lets HereO connect you again. */
+function BlockedSection({ userId }: { userId: string }) {
+  const { blocked, unblock } = useBlocked(userId);
+  if (!blocked.length) return null;
+  return (
+    <>
+      <SectionLabel>Blocked</SectionLabel>
+      {blocked.map((b) => {
+        const name = b.profiles?.display_name?.split(' ')[0] || 'Someone';
+        return (
+          <Card key={b.blocked_id} style={styles.row}>
+            <Text style={[styles.rowTitle, { flex: 1 }]}>{name}</Text>
+            <Button
+              label="Unblock"
+              variant="ghost"
+              onPress={() =>
+                Alert.alert(`Unblock ${name}?`, 'HereO may send you to each other again.', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Unblock', onPress: () => unblock(b.blocked_id) },
+                ])
+              }
+            />
+          </Card>
+        );
+      })}
+    </>
+  );
+}

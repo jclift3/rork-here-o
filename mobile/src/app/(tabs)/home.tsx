@@ -10,6 +10,7 @@ import { Aurora, Glass } from '@/components/Glass';
 import { HoldToHelp } from '@/components/HoldToHelp';
 import { Mascot } from '@/components/Mascot';
 import { alertSendFailed, raiseAlert } from '@/lib/incidents';
+import { useEmergencyNumber } from '@/lib/emergency';
 import { getQuickPosition } from '@/lib/location';
 import { useMode } from '@/lib/mode';
 import { describeRingDistance, loadActiveRings, useDuress, type ActiveRing } from '@/lib/ring';
@@ -36,6 +37,7 @@ export default function Home() {
   const { mode, setMode } = useMode();
   const [nearby, setNearby] = useState<number | null>(null);
   const [noLocation, setNoLocation] = useState(false);
+  const emergency = useEmergencyNumber();
   const [circleCount, setCircleCount] = useState(0);
   const [active, setActive] = useState<string | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -93,7 +95,16 @@ export default function Home() {
     }
   };
 
-  const nearbyText = nearby == null ? (noLocation ? 'Turn on location to see who’s nearby' : 'Checking who’s nearby…') : `${nearby} ${nearby === 1 ? 'hero' : 'heroes'} nearby`;
+  // Be honest about coverage: when no hero is near, say so, and say who still hears.
+  const noHeroes = nearby === 0;
+  const nearbyText =
+    nearby == null
+      ? noLocation
+        ? 'Turn on location to see who’s nearby'
+        : 'Checking who’s nearby…'
+      : noHeroes
+        ? 'No heroes near you right now'
+        : `${nearby} ${nearby === 1 ? 'hero' : 'heroes'} nearby`;
 
   return (
     <View style={styles.root}>
@@ -115,8 +126,13 @@ export default function Home() {
             <Text style={styles.statusSub}>
               {circleCount} in your circle{mode === 'her_o' ? ' · Her-O mode' : ''}
             </Text>
+            {noHeroes && (
+              <Text style={styles.statusSub}>
+                {circleCount ? 'Your circle still hears from you. ' : ''}In danger? Call {emergency}.
+              </Text>
+            )}
           </View>
-          <View style={styles.liveDot} />
+          <View style={[styles.liveDot, noHeroes && { backgroundColor: colors.heroEnd }]} />
         </Glass>
 
         {active && !duress && (
@@ -173,7 +189,9 @@ export default function Home() {
           <Text style={styles.holdHint}>
             {mode === 'her_o'
               ? 'Her-O mode: only verified women heroes are sent.'
-              : 'Hold for two seconds. Your circle and nearby heroes are alerted.'}
+              : noHeroes
+                ? `Hold for two seconds. Your circle is alerted, and any hero who comes into range. In danger, call ${emergency}.`
+                : 'Hold for two seconds. Your circle and nearby heroes are alerted.'}
           </Text>
         </View>
 

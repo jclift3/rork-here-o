@@ -3,7 +3,9 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { composeBrief } from "../brief.ts";
+import { demoIds, isDemo } from "../demo.ts";
 import { buildPushMessages, sendPush } from "../push.ts";
+import { blockedIds } from "../safety.ts";
 import { firstName } from "../triage.ts";
 import type { GuardianCandidate, Incident, ResponderView, Triage, Urgency } from "../types.ts";
 import { type AgentOutput, runAgent } from "./agent.ts";
@@ -105,13 +107,20 @@ export async function reassessIncident(db: SupabaseClient, incidentId: string, b
 
   let candidates: GuardianCandidate[] = [];
   const guardiansOn = responders.filter((r) => r.kind === "guardian").length;
-  if (incident.lat != null && incident.lng != null && guardiansOn < 3) {
+  // Demo requests never reach real heroes; real requests skip blocked and demo people.
+  const demo = await isDemo(db, incident.requester_id);
+  if (!demo && incident.lat != null && incident.lng != null && guardiansOn < 3) {
     const { data } = await db.rpc("nearby_guardians", {
       p_lat: incident.lat,
       p_lng: incident.lng,
       p_radius_m: SEARCH_RADIUS_M,
       p_her_o_only: incident.mode === "her_o",
-      p_exclude: [incident.requester_id, ...responders.map((r) => r.user_id)],
+      p_exclude: [
+        incident.requester_id,
+        ...responders.map((r) => r.user_id),
+        ...(await blockedIds(db, incident.requester_id)),
+        ...(await demoIds(db)),
+      ],
       p_limit: 6,
     });
     candidates = (data ?? []) as GuardianCandidate[];

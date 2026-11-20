@@ -14,6 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { supabase } from './supabase';
+import { currentEmergencyNumber, type EmergencyNumber, numberForCoords } from './emergency';
 
 /** Muse Voice Transcribe wants WAV: mono 16-bit PCM at 16 kHz. */
 export const WAV_16K: RecordingOptions = {
@@ -170,9 +171,9 @@ export function useAgentDecisions(incidentId: string) {
 }
 
 /** Same rule as the server: UK and Ireland dial 999, everywhere else in our plan 911. */
-export function emergencyNumber(lat: number | null | undefined, lng: number | null | undefined): '999' | '911' {
-  if (lat == null || lng == null) return '911';
-  return lat > 49.8 && lat < 61 && lng > -11 && lng < 2.1 ? '999' : '911';
+export function emergencyNumber(lat: number | null | undefined, lng: number | null | undefined): EmergencyNumber {
+  if (lat == null || lng == null) return currentEmergencyNumber();
+  return numberForCoords(lat, lng);
 }
 
 const TOOL_LABEL: Record<string, string> = {

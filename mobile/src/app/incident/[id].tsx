@@ -39,6 +39,7 @@ import {
 import { watchPosition } from '@/lib/location';
 import { emergencyNumber } from '@/lib/muse';
 import { disarmRing, endHelpRequest, loadPinStatus, notifyRingEnded, useDuress, useRingFlow, type PinStatus } from '@/lib/ring';
+import { reportOrBlock, useBlocked } from '@/lib/reports';
 import { useUserId } from '@/lib/session';
 import { friendlyError, supabase } from '@/lib/supabase';
 import { colors, space } from '@/lib/theme';
@@ -226,8 +227,9 @@ function RequesterView({ bundle, userId }: { bundle: IncidentBundle; userId: str
               <Panel>
                 <Label>{active ? 'WHO KNOWS' : 'WHO WAS THERE'}</Label>
                 {responders.map((r) => (
-                  <ResponderRow key={r.user_id} responder={r} />
+                  <ResponderRow key={r.user_id} responder={r} incidentId={incident.id} />
                 ))}
+                <Text style={night_styles.sub}>Tap a name to report or block someone.</Text>
               </Panel>
             )}
             {active && <NeighboursComing incidentId={incident.id} />}
@@ -467,12 +469,18 @@ function ResponderView({ bundle, userId }: { bundle: IncidentBundle; userId: str
               <Panel>
                 <Label>RESPONDERS</Label>
                 {responders.map((r) => (
-                  <ResponderRow key={r.user_id} responder={r} me={r.user_id === userId} />
+                  <ResponderRow key={r.user_id} responder={r} me={r.user_id === userId} incidentId={incident.id} />
                 ))}
               </Panel>
             )}
             <MuseCoordinator incidentId={incident.id} responders={responders} />
             <Timeline bundle={bundle} userId={userId} />
+            <Pressable
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => reportOrBlock({ userId: incident.requester_id, name: requesterName, incidentId: incident.id })}>
+              <Text style={night_styles.sub}>Report a problem with {requesterName}</Text>
+            </Pressable>
           </Sheet>
         </ScrollView>
         <StatusBackdrop />
@@ -548,7 +556,7 @@ function BriefCard({ bundle }: { bundle: IncidentBundle }) {
   );
 }
 
-function ResponderRow({ responder, me }: { responder: Responder; me?: boolean }) {
+function ResponderRow({ responder, me, incidentId }: { responder: Responder; me?: boolean; incidentId: string }) {
   const color =
     responder.status === 'on_scene' ? '#3CCB7F' : responder.status === 'en_route' ? '#FF7AB8' : responder.status === 'declined' ? night.faint : night.muted;
   const sub = [
@@ -557,7 +565,7 @@ function ResponderRow({ responder, me }: { responder: Responder; me?: boolean })
   ]
     .filter(Boolean)
     .join(' · ');
-  return (
+  const row = (
     <PersonRow
       name={firstName(responder)}
       sub={sub}
@@ -566,20 +574,31 @@ function ResponderRow({ responder, me }: { responder: Responder; me?: boolean })
       hero={responder.kind === 'guardian'}
     />
   );
+  if (me) return row;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityHint="Report or block this person"
+      onPress={() => reportOrBlock({ userId: responder.user_id, name: firstName(responder), incidentId })}>
+      {row}
+    </Pressable>
+  );
 }
 
 function Timeline({ bundle, userId }: { bundle: IncidentBundle; userId: string }) {
+  const { blockedIds } = useBlocked(userId);
   const items = useMemo(
     () =>
       bundle.events.filter(
         (e) =>
-          e.kind === 'message' ||
+          !(e.actor_id && blockedIds.has(e.actor_id)) &&
+          (e.kind === 'message' ||
           e.kind === 'escalated_911' ||
           e.kind === 'voice' ||
           e.kind === 'agent' ||
-          (e.kind === 'created' && e.body),
+          (e.kind === 'created' && e.body)),
       ),
-    [bundle.events],
+    [bundle.events, blockedIds],
   );
   if (!items.length) return null;
   return (
@@ -588,9 +607,16 @@ function Timeline({ bundle, userId }: { bundle: IncidentBundle; userId: string }
       {items.map((e) => {
         const mine = e.actor_id === userId;
         const agent = e.kind === 'agent';
+        const fromPerson = !mine && !agent && !!e.actor_id;
+        const name = e.profiles?.display_name?.split(' ')[0] ?? 'Someone';
         return (
-          <View
+          <Pressable
             key={e.id}
+            disabled={!fromPerson}
+            accessibilityHint={fromPerson ? 'Long press to report or block' : undefined}
+            onLongPress={() =>
+              fromPerson && reportOrBlock({ userId: e.actor_id!, name, incidentId: bundle.incident.id, eventId: e.id })
+            }
             style={[
               styles.bubble,
               mine ? styles.mine : styles.theirs,
@@ -610,7 +636,7 @@ function Timeline({ bundle, userId }: { bundle: IncidentBundle; userId: string }
               </View>
             )}
             <Text style={{ color: night.text, fontSize: 16, lineHeight: 22 }}>{e.kind === 'voice' ? `“${e.body}”` : e.body}</Text>
-          </View>
+          </Pressable>
         );
       })}
     </>

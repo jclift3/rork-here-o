@@ -82,6 +82,7 @@ export function Button({
   icon,
   style,
   tall,
+  textColor,
 }: {
   label: string;
   onPress: () => void;
@@ -91,6 +92,8 @@ export function Button({
   icon?: ReactNode;
   style?: StyleProp<ViewStyle>;
   tall?: boolean;
+  /** Overrides the variant's label color, e.g. red for a destructive ghost button. */
+  textColor?: string;
 }) {
   const v = buttonVariants[variant];
   const inner = (
@@ -100,7 +103,7 @@ export function Button({
       ) : (
         <>
           {icon}
-          <Text style={[styles.buttonLabel, { color: v.text }]}>{label}</Text>
+          <Text style={[styles.buttonLabel, { color: textColor ?? v.text }]}>{label}</Text>
         </>
       )}
     </View>

@@ -13,7 +13,7 @@
 // Every verdict is recorded with its reason, so each incident has an audit
 // trail of what the AI tried and what the rules did about it.
 
-import { describesImmediateDanger, GUARDIAN_CONDUCT, isSafeRole } from "../safety.ts";
+import { describesImmediateDanger, emergencyNumber, GUARDIAN_CONDUCT, isSafeRole } from "../safety.ts";
 import { MAX_GUARDIANS } from "../triage.ts";
 import type { GuardianCandidate, Urgency } from "../types.ts";
 
@@ -43,12 +43,7 @@ export interface Note {
 // Being followed or watched is serious even without the words for violence.
 const FOLLOWED = /\b(follow(ing|ed)? me|someone('s| is) behind me|won'?t leave me alone|keeps? staring|stalk)/i;
 
-/** UK (and Ireland) use 999/112; everywhere else in our launch plan uses 911. */
-export function emergencyNumber(lat: number | null, lng: number | null): "999" | "911" {
-  if (lat == null || lng == null) return "911";
-  const inBritishIsles = lat > 49.8 && lat < 61 && lng > -11 && lng < 2.1;
-  return inBritishIsles ? "999" : "911";
-}
+export { emergencyNumber } from "../safety.ts";
 
 export function urgencyFloor(text: string, silent: boolean): Urgency {
   if (describesImmediateDanger(text)) return "critical";
